@@ -1,0 +1,133 @@
+﻿@page "/registroCategoria"
+
+@inject HttpClient httpClient
+
+@rendermode InteractiveServer
+
+<div class="container">
+    <div class="card">
+        <EditForm Model="categoria" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+
+            <div class="card-header">
+                <h2>Registro de Categorias</h2>
+            </div>
+
+            <div class="card-body">
+                <div class="col-2">
+                    <label>Categoria Id</label>
+                    <div class="input-group mb-3">
+                        <InputNumber @bind-Value="CategoriaId" class="form-control"></InputNumber>
+                        <button type="button" @onclick="Buscar" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4">
+                        <label>Nombre:</label>
+                        <div class="input-group mb-3">
+                            <InputText @bind-Value="categoria.NombreCategoria" class="form-control"></InputText>
+                            <ValidationMessage For="@(() => categoria.NombreCategoria)"></ValidationMessage>
+                        </div>
+                    </div>
+
+                    <div class="col-4">
+                        <label>Ruta de la categoria</label>
+                        <div class="input-group mb-3">
+                            <InputText class="form-control" @bind-Value="categoria.Url"></InputText>
+                            <ValidationMessage For="@(() => categoria.Url)"></ValidationMessage>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer d-flex justify-content-center">
+                    <div class="btn-group">
+                        <button @onclick="Nuevo" type="button" class="btn btn-outline-primary"><i class="bi bi-file-earmark">Nuevo</i></button>
+                        <button class="btn btn-outline-success" type="submit"><i class="bi bi-file-earmark-check-fill"> Guardar</i></button>
+                        <button type="button" class="btn btn-outline-danger" @onclick="Eliminar"><i class="bi bi-trash3">Eliminar</i></button>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+
+
+
+
+
+
+@code {
+    [Parameter]
+    public int CategoriaId { get; set; }
+
+    [SupplyParameterFromForm]
+    public Categorias categoria { get; set; } = new Categorias();
+
+    public List<Categorias> categorias { get; set; } = new List<Categorias>();
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if(CategoriaId > 0)
+        {
+            categoria.CategoriaId = CategoriaId;
+            await Buscar();
+        }
+    }
+
+    public async Task Buscar()
+    {
+        var categoriaEncontrada = await httpClient.GetFromJsonAsync<Categorias>($"api/Categorias/{CategoriaId}");
+
+        if(categoriaEncontrada != null)
+        {
+            categoria = categoriaEncontrada;
+            StateHasChanged();
+        }
+        else
+        {
+            //mensaje de error
+        }
+    }
+
+    public async Task Guardar()
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/Categorias", categoria);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var categoriaDevuelta = await response.Content.ReadFromJsonAsync<Categorias>();
+
+        if(categoriaDevuelta is not null)
+        {
+            categoria = categoriaDevuelta;
+            StateHasChanged();
+            Nuevo();
+        }
+    }
+
+    public void Nuevo()
+    {
+        categoria = new Categorias();
+    }
+
+    public async Task Eliminar()
+    {
+        using var response = await httpClient.DeleteAsync($"api/Categorias/{categoria.CategoriaId}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+        else
+        {
+            Nuevo();
+        }
+    }
+}
