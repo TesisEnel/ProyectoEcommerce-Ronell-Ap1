@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34316.72
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProyectoEcommerceAP1", "ProyectoEcommerceAP1\ProyectoEcommerceAP1\ProyectoEcommerceAP1.csproj", "{8323D306-BBB1-4D28-8339-517C3C23DAF0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProyectoEcommerceAP1", "ProyectoEcommerceAP1\ProyectoEcommerceAP1\ProyectoEcommerceAP1.csproj", "{8323D306-BBB1-4D28-8339-517C3C23DAF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProyectoEcommerceAP1.Client", "ProyectoEcommerceAP1\ProyectoEcommerceAP1.Client\ProyectoEcommerceAP1.Client.csproj", "{2E380BD7-9908-4EBD-96B6-0AF4EE6628FA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProyectoEcommerceAP1.Client", "ProyectoEcommerceAP1\ProyectoEcommerceAP1.Client\ProyectoEcommerceAP1.Client.csproj", "{2E380BD7-9908-4EBD-96B6-0AF4EE6628FA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Shared\Shared.csproj", "{8F30634E-3928-49E6-9405-0612EF738299}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{2E380BD7-9908-4EBD-96B6-0AF4EE6628FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2E380BD7-9908-4EBD-96B6-0AF4EE6628FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2E380BD7-9908-4EBD-96B6-0AF4EE6628FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F30634E-3928-49E6-9405-0612EF738299}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F30634E-3928-49E6-9405-0612EF738299}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F30634E-3928-49E6-9405-0612EF738299}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F30634E-3928-49E6-9405-0612EF738299}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

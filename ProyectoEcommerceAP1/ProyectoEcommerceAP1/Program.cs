@@ -25,17 +25,26 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
+builder.Services.AddControllers();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+
+builder.Services.AddScoped(http => new HttpClient
+{
+    BaseAddress = new Uri(builder.Configuration.GetSection("BaseAddress").Value!)
+});
 
 var app = builder.Build();
 
@@ -53,7 +62,7 @@ else
 }
 
 app.UseHttpsRedirection();
-
+app.MapControllers();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
