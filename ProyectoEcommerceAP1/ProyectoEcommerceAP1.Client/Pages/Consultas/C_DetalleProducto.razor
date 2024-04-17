@@ -1,0 +1,82 @@
+﻿@page "/detalleProducto/{ProductoId}"
+
+@inject HttpClient httpClient
+
+@rendermode InteractiveServer
+
+@if(producto != null)
+{
+    <div class="container text-center">
+        <div class="card">
+            <div class="media">
+                <div class="img-container">
+                    @if(producto.ImagenProducto != null)
+                    {
+                        <img src="@producto.ImagenProducto" alt="Imagen del producto" class="img-fluid"/>
+                    }
+                </div>
+
+                <div class="media-body">
+                    <h2 class="mb-0">@(producto != null ? producto.Nombre : "Producto no encontrado")</h2>
+                    <p>@producto.Descripcion</p>
+                    @if(producto.Precio > producto.PrecioOferta)
+                    {
+                        <h6 class="text-muted original-price">RD$ @producto.Precio</h6>
+                    }
+                    else
+                    {
+                        <h6>RD$ @producto.Precio</h6>
+                    }
+
+                    <h4 class="price">
+                        RD$ @producto.Precio
+                    </h4>
+
+                    <button @onclick="AgregarCarrito" type="button" class="btn btn-outline-primary"><i class="bi bi-cart"></i> Agregar al carrito</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+    public Productos producto { get; set; }
+
+    [Parameter]
+    public string ProductoId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
+        producto = productos.FirstOrDefault(p => p.ProductoId == Int32.Parse(ProductoId));
+    }
+
+    public async Task AgregarCarrito()
+    {
+        if(producto != null)
+        {
+            if(producto.EnCarrito == true)
+            {
+                //mensaje de que ya ha sido agregado al carrito
+            }
+            else
+            {
+                producto.EnCarrito = true;
+
+                var response = await httpClient.PutAsJsonAsync($"api/Productos/{producto.ProductoId}", producto);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return;
+                }
+                else
+                {
+                    //todo bien
+                }
+                StateHasChanged();  
+            }
+        }
+    }
+}
