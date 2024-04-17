@@ -1,0 +1,162 @@
+﻿@page "/consultaClientes"
+
+@inject HttpClient httpClient
+
+@rendermode InteractiveServer
+
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h1>Consulta de Clientes</h1>
+        </div>
+
+        <div class="card-body">
+            <a href="/registroCliente"><button type="button" class="btn btn-info"><i class="oi oi-plus"> Agregar un nuevo cliente</i></button></a>
+        
+            <div class="row">
+                <div class="col">
+                    <label>Desde</label>
+                    <InputDate @bind-Value="Desde" class="form-control"></InputDate>
+                </div>
+
+                <div class="col">
+                    <label>Hasta</label>
+                    <InputDate @bind-Value="Hasta" class="form-control"></InputDate>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <label>Campo</label>
+                    <InputSelect @bind-Value="opcFiltrado" class="form-select">
+                        <option value="0" disabled selected>Seleccione</option>
+                        <option value="1">Busqueda porI ID</option>
+                        <option value="2">Busqueda por Nombre</option>
+                    </InputSelect>
+                </div>
+
+                <div class="col">
+                    <label>Filtrar</label>
+                    @switch (opcFiltrado)
+                    {
+                        case 1:
+                            <InputNumber class="form-control" @bind-Value="cliente.ClienteId"></InputNumber>
+                            Conteo = 0;
+                            break;
+                        case 2:
+                            <InputText class="form-control" @bind-Value="cliente.NombreCompleto"></InputText>
+                            break;
+                    }
+                </div>
+
+                <div class="col">
+                    <button type="button" class="btn btn-outline-primary" @onclick="Buscar"><i class="oi oi-reload"> Buscar</i></button>
+                </div>
+            </div>
+            
+            @if(clientes is not null)
+            {
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Cliente Id</th>
+                            <th>Fecha de Nacimiento</th>
+                            <th>Nombre completo</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach(var cliente in clientes)
+                        {
+                            <tr>
+                                <td>@cliente.ClienteId</td>
+                                <td>@cliente.FechaNacimiento.ToString("dd/MM/yyyy")</td>
+                                <td>@cliente.NombreCompleto</td>
+                                <td><a href="/registroCliente/@cliente.ClienteId"><button type="button" class="btn btn-outline-primary"><i class="oi oi-eye"></i> Ver</button></a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        
+        </div>
+
+        <div class="card-footer">
+            <div class="form-row justify-content-sm-between" aria-orientation="vertical">
+                <div class="col-3">
+                    <label for="CantidadFilas" class="col-form-label"><strong>Num. Filas</strong>&nbsp;</label>
+                    <input id="CantidadFilas" @bind-value="@Conteo" disabled class="form-control" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+    public List<Clientes> clientes { get; set; } = new List<Clientes>();
+
+    public int Conteo { get; set; }
+
+    public DateTime Desde { get; set; }
+
+    public DateTime Hasta { get; set; }
+
+    public int clienteId { get; set; }
+
+    public int opcFiltrado { get; set; }
+
+    public Clientes cliente { get; set; } = new Clientes();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Desde = DateTime.Now.AddYears(-75);
+        Hasta = DateTime.Now.AddYears(-17);
+    }
+
+    public async Task Buscar()
+    {
+        clientes = await httpClient.GetFromJsonAsync<List<Clientes>>($"api/Clientes");
+
+        if(Desde != default && Hasta != default)
+        {
+            clientes = clientes.Where(c => c.FechaNacimiento >= Desde.Date && c.FechaNacimiento <= Hasta).ToList();
+        }
+
+        switch (opcFiltrado)
+        {
+            case 1:
+                if (Desde != default && Hasta != default)
+                {
+                    clientes = clientes.Where(c => c.FechaNacimiento >= Desde.Date && c.FechaNacimiento <= Hasta).ToList();
+                }
+
+                if(cliente.ClienteId > 0)
+                {
+                    clientes = clientes.Where(c => c.ClienteId == cliente.ClienteId).ToList();
+                }
+                break;
+
+            case 2:
+                if(Desde != default && Hasta != default)
+                {
+                    clientes = clientes.Where(c => c.FechaNacimiento >= Desde.Date && c.FechaNacimiento <= Hasta).ToList();
+                }
+
+                if (!string.IsNullOrEmpty(cliente.NombreCompleto))
+                {
+                    clientes = clientes.Where(c => c.NombreCompleto.ToLower().Contains(cliente.NombreCompleto.ToLower())).ToList();
+                }
+                break;
+        }
+
+        Conteo = clientes != null ? clientes.Count : 0;
+        StateHasChanged();
+
+
+    }
+}
