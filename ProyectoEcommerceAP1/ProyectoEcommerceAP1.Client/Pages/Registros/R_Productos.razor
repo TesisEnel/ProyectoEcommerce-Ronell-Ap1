@@ -1,0 +1,232 @@
+﻿@page "/registroProducto"
+
+@inject HttpClient httpClient
+
+@rendermode InteractiveServer
+
+<div class="container">
+    <div class="card">
+        <EditForm Model="producto" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+
+            <div class="card-header">
+                <h3>Registro de productos</h3>
+            </div>
+
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-2">
+                        <label>Producto Id</label>
+                        <div class="input-group mb-3">
+                            <InputNumber @bind-Value="ProductoId" class="form-control" aria-describedby="botonBuscar"></InputNumber>
+                            <button type="button" @onclick="Buscar" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-3">
+                        <label>Fecha</label>
+                        <div class="input-group mb-3">
+                            <InputDate class="form-control" @bind-Value="producto.FechaEntrada"></InputDate>
+                            <ValidationMessage For="@(() => producto.FechaEntrada)"></ValidationMessage>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <div class="row">
+                    <div class="col-3">
+                        <label>Nombre</label>
+                        <div class="input-group mb-3">
+                            <InputText @bind-Value="producto.Nombre" class="form-control"></InputText>
+                            <ValidationMessage For="@(() => producto.Nombre)"></ValidationMessage>
+                        </div>
+                    </div>
+
+
+                    <div class="col-3">
+                        <label>Descripcion</label>
+                        <div class="input-group mb-3">
+                            <InputTextArea @bind-Value="producto.Descripcion" class="form-control"></InputTextArea>
+                            <ValidationMessage For="@(() => producto.Descripcion)"></ValidationMessage>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <label>Cantidad del producto</label>
+                        <div class="input-group mb-3">
+                            <InputNumber class="form-control" @bind-Value="producto.CantidadProducto"></InputNumber>
+                            <ValidationMessage For="@(() => producto.CantidadProducto)"></ValidationMessage>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3">
+                        <label>Precio</label>
+                        <div class="input-group mb-3">
+                            <InputNumber class="form-control" @bind-Value="producto.Precio"></InputNumber>
+                            <ValidationMessage For="@(() => producto.Precio)"></ValidationMessage>
+                        </div>
+                    </div>
+
+                    <div class="col-3">
+                        <label>Precio de Oferta (opcional)</label>
+                        <div class="input-group mb-3">
+                            <InputNumber class="form-control" @bind-Value="producto.PrecioOferta"></InputNumber>
+                            <ValidationMessage For="@(() => producto.PrecioOferta)"></ValidationMessage>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3">
+                        <label>Categorias</label>
+                        <div class="input-group mb-3">
+                            <InputSelect class="form-select" @bind-Value="producto.CategoriaId">
+                                <option value="0" disabled selected>Selecciona una categoria</option>
+                                @foreach(var categoria in L_Categorias)
+                                {
+                                    <option value="@categoria.CategoriaId">@categoria.NombreCategoria</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="col-3">
+                        <label class="form-label @(ImageUploadMessage == ""?"":"text-danger")">
+                            @(ImageUploadMessage == "" ? "Upload Image" : ImageUploadMessage)
+                        </label>
+                        <InputFile class="form-control" OnChange="UploadImage"></InputFile>
+                        <ValidationMessage For="@(() => producto.ImagenProducto)"></ValidationMessage>
+                    </div>
+                </div>
+
+                <div class="card-footer d-flex justify-content-center">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary" @onclick="Nuevo">Nuevo <i class="bi bi-file-earmark"></i></button>
+                        <button type="submit" class="btn btn-outline-success">Guardar <i class="bi bi-file-earmark-check-fill"></i></button>
+                        <button type="button" class="btn btn-outline-danger">Eliminar <i class="bi bi-trash3"></i></button>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+
+
+
+
+
+
+@code {
+
+    [Parameter]
+    public int ProductoId { get; set; }
+
+    [SupplyParameterFromForm]
+    public Productos producto { get; set; } = new Productos();
+
+    public IEnumerable<Categorias> L_Categorias { get; set; } = Enumerable.Empty<Categorias>();
+
+    string ImageUploadMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCategorias();
+
+        if(ProductoId > 0)
+        {
+            producto.ProductoId = ProductoId;
+            await Buscar();
+        }
+    }
+
+    private async Task CargarCategorias()
+    {
+        var categoriaEncontrada = await httpClient.GetFromJsonAsync<IEnumerable<Categorias>>("api/Categorias");
+
+        if(categoriaEncontrada != null)
+        {
+            L_Categorias = categoriaEncontrada;
+        }
+    }
+
+    public async Task Buscar()
+    {
+        var productoEncontrado = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{ProductoId}");
+
+        if(productoEncontrado != null)
+        {
+            producto = productoEncontrado;
+            StateHasChanged();
+        }
+        else
+        {
+            //mensaje de error al buscar el producto
+        }
+    }
+
+    public async void Guardar()
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/Productos", producto);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var productoDevuelto = await response.Content.ReadFromJsonAsync<Productos>();
+
+        if(productoDevuelto is not null)
+        {
+            producto = productoDevuelto;
+            StateHasChanged();
+            Nuevo();
+
+            //Mensaje de que se guardo todo bien
+        }
+    }
+
+    public void Nuevo()
+    {
+        this.producto = new Productos();
+    }
+
+    public async Task Eliminar()
+    {
+        using var response = await httpClient.DeleteAsync($"api/Productos/{producto.ProductoId}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+        else
+        {
+            Nuevo();
+        }
+    }
+
+    async Task UploadImage(InputFileChangeEventArgs e)
+    {
+        if (e.File.Name.ToLower().Contains(".png"))
+        {
+            var format = "image/png";
+            var resizeImage = await e.File.RequestImageFileAsync(format, 300, 300);
+            var buffer = new byte[resizeImage.Size];
+            await resizeImage.OpenReadStream().ReadAsync(buffer);
+            var imageData = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+            ImageUploadMessage = "";
+            producto.ImagenProducto = imageData;
+            imageData = "";
+            return;
+        }
+
+        ImageUploadMessage = "Se necesita un archivo PNG.";
+        return;
+    }
+
+
+
+
+}
