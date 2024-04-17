@@ -1,0 +1,284 @@
+﻿@page "/registroCliente"
+@page "/registroCliente/{ClienteId:int}"
+@using Microsoft.AspNetCore.Authorization
+
+@rendermode InteractiveServer
+
+
+@inject HttpClient httpClient
+
+<div class="container">
+    <EditForm Model="clientes" OnValidSubmit="Guardar" >
+        <DataAnnotationsValidator />
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Registro de clientes</h3>
+            </div>
+
+            <div class="card-body">
+                <label>Id</label>
+                <div class="col-3">
+                    <div class="input-group mb-3">
+                        <InputNumber class="form-control" @bind-Value="ClienteId" aria-describedby="BuscarId"></InputNumber>
+                        <button type="button" class="btn btn-outline-primary" @onclick="Buscar" id="BuscarId"><i class="b bi-search"></i></button>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3">
+                        <label>Nombre:</label>
+                        <div class="input-group mb-3">
+                            <InputText class="form-control" @bind-Value="clientes.NombreCompleto" aria-describedby="NombreCliente"></InputText>
+                            <ValidationMessage For="@(() => clientes.NombreCompleto)"></ValidationMessage>
+                        </div>
+                    </div>
+
+                    <div class="col-3">
+                        <label>Fecha de Nacimiento</label>
+                        <div class="input-group mb-3">
+                            <InputDate class="form-control" @bind-Value="clientes.FechaNacimiento" aria-describedby="FechaNCliente"></InputDate>
+                            <ValidationMessage For="@(() => clientes.FechaNacimiento)"></ValidationMessage>
+                        </div>
+                    </div>
+                </div>
+                <br />
+
+                <fieldset class="border-success border border-1">
+                    <h3>Telefonos</h3>
+
+                    <div>
+                        <div class="row">
+                            <div class="col-3">
+                                <label>Tipo de Telefono</label>
+                                <InputSelect class="form-select" @bind-Value="TipoTelSeleccionado">
+                                    <option value="0" disabled selected>[Seleccione]</option>
+                                    @foreach(var tipo in L_TelefonosClientes)
+                                    {
+                                        <option value="@tipo.TipoTelId">@tipo.TipoTelefonos</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            <div class="col-3">
+                                <label><span class="oi oi-person"></span> Nombre</label>
+                                <InputText class="form-control" @bind-Value="Nombre"></InputText>
+                            </div>
+
+                            <div class="col-3">
+                                <label>Telefono</label>
+                                <InputText class="form-control" @bind-Value="TelIngresado"></InputText>
+                            </div>
+
+
+                            <div class="col">
+                                <button type="button" class="btn btn-outline-primary" @onclick="AgregarDetalle"><i class="bi bi-plus">Agregar</i></button>
+                            </div>
+
+                            @if(MensajeVal.Length > 0)
+                            {
+                                <label class="text-danger">@MensajeVal</label>
+                            }
+                        </div>
+
+                        <br />
+                        <table class="table table-bordered table-light m-1">
+                            <thead class="thead">
+                                <tr class="table">
+                                    <th>Tipo Telefono</th>
+                                    <th>Nombre</th>
+                                    <th>Telefono</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach(var detalle in clientes.ClientesDetalle)
+                                {
+                                    <tr>
+                                        <td>@(TipoDescripcion(detalle.TipoTelId))</td>
+                                        <td>@detalle.Nombre</td>
+                                        <td>@detalle.Telefono</td>
+                                        <td><button @onclick="@(() => RemoverDetalle(detalle))" class="btn btn-outline-danger"><i class="oi oi-trash">Eliminar</i></button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+
+                <br />
+
+                <div class="d-flex justify-content-center">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary" @onclick="Nuevo" type="button"><i class="oi oi-file">Nuevo</i></button>
+                        <button class="btn btn-outline-success" type="submit"><i class="oi oi-document">Guardar</i></button>
+                        <button class="btn btn-outline-danger" type="button" @onclick="Eliminar"><i class="oi oi-trash">Eliminar</i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+
+
+
+
+@code {
+    [Parameter]
+    public int ClienteId { get; set; }
+
+    [SupplyParameterFromForm]
+    public Clientes clientes { get; set; } = new Clientes();
+
+    public string Nombre { get; set; } = string.Empty;
+
+    public int TipoTelSeleccionado { get; set; }
+
+    public IEnumerable<TelefonosClientes> L_TelefonosClientes { get; set; } = Enumerable.Empty<TelefonosClientes>();
+
+    public string TelIngresado { get; set; } = string.Empty;
+
+    public string MensajeVal { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTiposTel();
+
+        if(ClienteId > 0)
+        {
+            clientes.ClienteId = ClienteId;
+            await Buscar();
+        }
+    }
+
+
+    private async Task CargarTiposTel()
+    {
+        var tipoTelEncontrados = await httpClient.GetFromJsonAsync<IEnumerable<TelefonosClientes>>("api/TelefonosClientes");
+
+        if(tipoTelEncontrados != null)
+        {
+            L_TelefonosClientes = tipoTelEncontrados;
+        }
+    }
+
+    public async Task Buscar()
+    {
+        var clienteEncontrado = await httpClient.GetFromJsonAsync<Clientes>($"api/Clientes/{ClienteId}");
+
+        if(clienteEncontrado is not null)
+        {
+            clientes = clienteEncontrado;
+            StateHasChanged();
+        }
+        else
+        {
+            //Error de que no se han encontrado clientes
+        }
+    }
+
+    public void Nuevo()
+    {
+        clientes = new Clientes();
+        MensajeVal = string.Empty;
+
+        TipoTelSeleccionado = 0;
+        TelIngresado = string.Empty;
+    }
+
+    public async Task Guardar()
+    {
+        using var response = await httpClient.PostAsJsonAsync<Clientes>($"api/Clientes", clientes);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var clienteDevuelto = await response.Content.ReadFromJsonAsync<Clientes>();
+
+        if(clienteDevuelto is not null)
+        {
+            clientes = clienteDevuelto;
+            StateHasChanged();
+            Nuevo();
+        }
+
+    }
+
+    public void AgregarDetalle()
+    {
+        if (!ValidarDetalle())
+        {
+            return;
+        }
+
+        clientes.ClientesDetalle.Add(new ClientesDetalle()
+        {
+            TipoTelId = TipoTelSeleccionado,    
+            Nombre = Nombre,
+            Telefono = TelIngresado
+        });
+
+        TipoTelSeleccionado = 0;
+        Nombre = string.Empty;
+        TelIngresado = string.Empty;
+    }
+
+    public string TipoDescripcion(int TipoTelId)
+    {
+        var tipoTel = L_TelefonosClientes.FirstOrDefault(c => c.TipoTelId == TipoTelId);
+
+        return tipoTel!.TipoTelefonos;
+    }
+
+    public void RemoverDetalle(ClientesDetalle detalleRemover)
+    {
+        TipoTelSeleccionado = detalleRemover.TipoTelId;
+
+        Nombre = detalleRemover.Nombre;
+
+        TelIngresado = detalleRemover.Telefono;
+
+        clientes.ClientesDetalle.Remove(detalleRemover);
+    }
+
+    public bool ValidarDetalle()
+    {
+        MensajeVal = string.Empty;
+
+        if (String.IsNullOrWhiteSpace(Nombre))
+        {
+            MensajeVal += "El nombre es oblugatorio";
+        }
+
+        if (TipoTelSeleccionado <= 0)
+        {
+            MensajeVal = "El Tipo de telefono es obligatorio";
+        }
+
+        if (String.IsNullOrWhiteSpace(TelIngresado))
+        {
+            MensajeVal += "El telefono es obligatorio";
+        }
+
+        return MensajeVal.Length == 0;
+    }
+
+    public async Task Eliminar()
+    {
+        using var response = await httpClient.DeleteAsync($"api/Clientes/{clientes.ClienteId}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+        else
+        {
+            Nuevo();
+        }
+    }
+
+
+}
