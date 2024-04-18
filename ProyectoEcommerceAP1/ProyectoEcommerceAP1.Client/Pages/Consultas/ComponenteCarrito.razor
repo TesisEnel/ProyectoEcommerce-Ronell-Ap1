@@ -1,0 +1,82 @@
+﻿@page "/carrito"
+
+@inject HttpClient httpClient
+
+@if (productoEnCarrito != null && productoEnCarrito.Any())
+{
+
+    <div class="container">
+        <h2 class="text-center">Productos en el carrito</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var producto in productoEnCarrito)
+                    {
+                        <tr>
+                            <td> 
+                                @if (!string.IsNullOrEmpty(producto.ImagenProducto))
+                                {
+                                    <img src="@producto.ImagenProducto" alt="Imagen del producto" class="img-fluid rounded" style="max-width: 100px;" />
+                                }
+                            </td>
+                            <td>@producto.Nombre</td>
+                            <td>@producto.Descripcion</td>
+                            <td>RD$ @producto.Precio</td>
+                        </tr>
+                    }
+                </tbody>
+
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-right">Total:</td>
+                        <td class="text-right">RD$ @precioAPagar</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+}
+
+else
+{
+    <p class="text-center">No hay productos en el carrito</p>
+}
+
+
+
+@code {
+    List<Productos> productoEnCarrito;
+    float precioAPagar;
+    int ItemCarritoId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProductosEnCarrito();
+        CalcularTotalPrecioCarrito();
+    }
+
+    async Task CargarProductosEnCarrito()
+    {
+        try
+        {
+            productoEnCarrito = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos/EnCarrito");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar productos en el carrito: {ex.Message}");
+        }
+    }
+
+    void CalcularTotalPrecioCarrito()
+    {
+        precioAPagar = productoEnCarrito.Sum(p => p.Precio);
+    }
+}
