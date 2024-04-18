@@ -1,25 +1,26 @@
 ﻿@page "/detalleProducto/{ProductoId}"
-
 @inject HttpClient httpClient
+@using Shared.Models
+@using System.Net.Http.Json
 
 @rendermode InteractiveServer
 
-@if(producto != null)
+@if (producto != null)
 {
     <div class="container text-center">
         <div class="card">
             <div class="media">
                 <div class="img-container">
-                    @if(producto.ImagenProducto != null)
+                    @if (producto.ImagenProducto != null)
                     {
-                        <img src="@producto.ImagenProducto" alt="Imagen del producto" class="img-fluid"/>
+                        <img src="@producto.ImagenProducto" alt="Imagen del producto" class="img-fluid" />
                     }
                 </div>
 
                 <div class="media-body">
                     <h2 class="mb-0">@(producto != null ? producto.Nombre : "Producto no encontrado")</h2>
                     <p>@producto.Descripcion</p>
-                    @if(producto.Precio > producto.PrecioOferta)
+                    @if (producto.Precio > producto.PrecioOferta)
                     {
                         <h6 class="text-muted original-price">RD$ @producto.Precio</h6>
                     }
@@ -39,8 +40,6 @@
     </div>
 }
 
-
-
 @code {
     public Productos producto { get; set; }
 
@@ -49,23 +48,46 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
-        producto = productos.FirstOrDefault(p => p.ProductoId == Int32.Parse(ProductoId));
+        await CargarProducto();
+    }
+
+    private async Task CargarProducto()
+    {
+        var response = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{ProductoId}");
+        if (response != null)
+        {
+            producto = response;
+        }
     }
 
     public async Task AgregarCarrito()
     {
-        if(producto != null)
+        if (producto != null)
         {
-            if(producto.EnCarrito == true)
-            {
-                //mensaje de que ya ha sido agregado al carrito
-            }
-            else
-            {
-                producto.EnCarrito = true;
 
-                var response = await httpClient.PutAsJsonAsync($"api/Productos/{producto.ProductoId}", producto);
+            var cliente = await ObtenerClienteAsync(2);
+
+            if(cliente != null)
+            {
+                var carrito = new Carrito
+                    {
+                        ClienteId = 2,
+                        Cliente = cliente,
+                        Total = 23784
+                    };
+
+                var itemCarrito = new ItemCarrito
+                    {
+                        ProductoId = producto.ProductoId,
+                        Producto = producto,
+                        Cantidad = 1,
+                        SubTotal = producto.PrecioOferta 
+                    };
+
+                carrito.Items.Add(itemCarrito);
+
+
+                var response = await httpClient.PostAsJsonAsync("api/Carrito", carrito);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -73,10 +95,40 @@
                 }
                 else
                 {
-                    //todo bien
+                    //se agrego el producto al carrito
                 }
-                StateHasChanged();  
+
+                if (producto != null)
+                {
+                    if (producto.EnCarrito == true)
+                    {
+                        //mensaje de que ya ha sido agregado al carrito
+                    }
+                    else
+                    {
+                        producto.EnCarrito = true;
+
+                        var response2 = await httpClient.PutAsJsonAsync($"api/Productos/{producto.ProductoId}", producto);
+
+                        if (!response2.IsSuccessStatusCode)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            //todo bien
+                        }
+                        StateHasChanged();
+                    }
+                }
             }
         }
+    }
+
+    private async Task<Clientes> ObtenerClienteAsync(int clienteId)
+    {
+        var response = await httpClient.GetFromJsonAsync<Clientes>($"api/Clientes/{clienteId}");
+
+        return response;
     }
 }
