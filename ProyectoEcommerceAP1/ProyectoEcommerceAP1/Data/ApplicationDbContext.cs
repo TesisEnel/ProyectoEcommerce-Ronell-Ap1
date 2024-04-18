@@ -14,6 +14,10 @@ namespace ProyectoEcommerceAP1.Data
 
         public DbSet<Categorias> Categorias { get; set; }
 
+        public DbSet<Carrito> Carrito { get; set; }
+
+        public DbSet<ItemCarrito> ItemsCarrito { get; set; }
+
 
 
 
