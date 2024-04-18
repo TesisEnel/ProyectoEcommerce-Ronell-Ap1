@@ -1,4 +1,9 @@
 ﻿@inherits LayoutComponentBase
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
+@using Shared.Models
+
+
 
 
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
@@ -9,7 +14,25 @@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <div class="row justify-content-between">
+                <div class="col-auto">
+                    @if (productoEnCarrito != null)
+                    {
+                        <div class="carrito-btn">
+                            <a href="/carrito">
+                                <button type="button"class="btn btn-outline-primary">
+                                <i class="bi bi-cart"></i> Carrito <span class="badge bg-secondary">@cantidadProductosEnCarrito</span>
+                            </button></a>
+                        </div>
+                    }
+                </div>
+@* 
+                <div class="col">
+                    <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+                </div> *@
+        </div>
+
+            
         </div>
 
         <article class="content px-4">
@@ -23,3 +46,28 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+
+
+@code {
+    List<Productos> productoEnCarrito;
+    int cantidadProductosEnCarrito;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProductosEnCarrito();
+        CalcularCantidadProductosEnCarrito();
+    }
+
+    async Task CargarProductosEnCarrito()
+    {
+        var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
+        productoEnCarrito = productos.Where(p => p.EnCarrito).ToList();
+    }
+
+    void CalcularCantidadProductosEnCarrito()
+    {
+        cantidadProductosEnCarrito = productoEnCarrito != null ? productoEnCarrito.Count : 0;
+    }
+
+}
