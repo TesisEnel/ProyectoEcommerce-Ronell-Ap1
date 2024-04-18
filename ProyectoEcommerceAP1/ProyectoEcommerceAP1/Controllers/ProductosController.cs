@@ -28,6 +28,12 @@ namespace ProyectoEcommerceAP1.Controllers
             return await _context.Productos.ToListAsync();
         }
 
+        [HttpGet("EnCarrito")]
+        public async Task<ActionResult<IEnumerable<Productos>>> GetProductosEnCarrito()
+        {
+            return await _context.Productos.Where(p => p.EnCarrito).ToListAsync();
+        }
+
         // GET: api/Productos/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Productos>> GetProductos(int id)
