@@ -42,6 +42,6 @@ namespace Shared.Models
 
         public bool EnCarrito { get; set; } = false;
 
-
+        public int? ItemCarritoId { get; set; }
     }
 }
