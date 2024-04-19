@@ -1,6 +1,7 @@
 ﻿@page "/registroCategoria"
 
 @inject HttpClient httpClient
+@inject NotificationService notificationService
 
 @rendermode InteractiveServer
 
@@ -67,6 +68,8 @@
 
     public List<Categorias> categorias { get; set; } = new List<Categorias>();
 
+    public NotificationMessage Mensaje { get; set; } = new NotificationMessage();
+
 
 
     protected override async Task OnInitializedAsync()
@@ -89,7 +92,15 @@
         }
         else
         {
-            //mensaje de error
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al buscar una categoria",
+                    Detail = "Ha ocurrido un error a la hora de buscar una categoria",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 
@@ -99,6 +110,14 @@
 
         if (!response.IsSuccessStatusCode)
         {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al guardar",
+                    Detail = "Ha ocurrido un error a la hora de guardar una categoria",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
             return;
         }
 
@@ -109,12 +128,32 @@
             categoria = categoriaDevuelta;
             StateHasChanged();
             Nuevo();
+
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Exito al guardar",
+                    Detail = "La categoria ha sido guardada correctamente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 
     public void Nuevo()
     {
         categoria = new Categorias();
+
+        Mensaje = new NotificationMessage
+            {
+                Severity = NotificationSeverity.Info,
+                Summary = "Se ha limpiado el formulario",
+                Detail = "Ahora puede rellenar nuevamente el formulario",
+                Duration = 5_000
+            };
+        notificationService.Notify(Mensaje);
+        return;
     }
 
     public async Task Eliminar()
@@ -123,11 +162,29 @@
 
         if (!response.IsSuccessStatusCode)
         {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al eliminar una categoria",
+                    Detail = "Ha ocurrido un error a la hora de eliminar una categoria",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
             return;
         }
         else
         {
             Nuevo();
+
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Exito al eliminar",
+                    Detail = "La categoria ha sido eliminada correctamente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 }

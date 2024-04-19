@@ -6,6 +6,7 @@
 
 
 @inject HttpClient httpClient
+@inject NotificationService notificationService
 
 <div class="container">
     <EditForm Model="clientes" OnValidSubmit="Guardar" >
@@ -141,6 +142,8 @@
 
     public string MensajeVal { get; set; } = string.Empty;
 
+    public NotificationMessage Mensaje { get; set; } = new NotificationMessage();
+
     protected override async Task OnInitializedAsync()
     {
         await CargarTiposTel();
@@ -174,7 +177,15 @@
         }
         else
         {
-            //Error de que no se han encontrado clientes
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al buscar",
+                    Detail = "Ha ocurrido un error a la hora de buscar un cliente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 
@@ -185,6 +196,16 @@
 
         TipoTelSeleccionado = 0;
         TelIngresado = string.Empty;
+
+        Mensaje = new NotificationMessage
+            {
+                Severity = NotificationSeverity.Info,
+                Summary = "Se ha limpiado el formulario",
+                Detail = "Ahora puede rellenar nuevamente el formulario",
+                Duration = 5_000
+            };
+        notificationService.Notify(Mensaje);
+        return;
     }
 
     public async Task Guardar()
@@ -193,6 +214,14 @@
 
         if (!response.IsSuccessStatusCode)
         {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al guardar",
+                    Detail = "Ha ocurrido un error a la hora de guardar un cliente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
             return;
         }
 
@@ -203,6 +232,16 @@
             clientes = clienteDevuelto;
             StateHasChanged();
             Nuevo();
+
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Exito al guardar",
+                    Detail = "El cliente ha sido guardado exitosamente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
         }
 
     }
@@ -272,11 +311,29 @@
 
         if (!response.IsSuccessStatusCode)
         {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al eliminar",
+                    Detail = "Ha ocurrido un error a la hora de eliminar un cliente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
             return;
         }
         else
         {
             Nuevo();
+
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Exito al guardar",
+                    Detail = "El cliente ha sido eliminado correctamente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 

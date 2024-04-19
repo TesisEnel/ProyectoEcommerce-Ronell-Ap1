@@ -5,6 +5,7 @@ using ProyectoEcommerceAP1.Client.Pages;
 using ProyectoEcommerceAP1.Components;
 using ProyectoEcommerceAP1.Components.Account;
 using ProyectoEcommerceAP1.Data;
+using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,10 @@ builder.Services.AddScoped(http => new HttpClient
 {
     BaseAddress = new Uri(builder.Configuration.GetSection("BaseAddress").Value!)
 });
+
+
+builder.Services.AddScoped<NotificationService>();
+
 
 var app = builder.Build();
 

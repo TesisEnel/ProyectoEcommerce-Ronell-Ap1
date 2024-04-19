@@ -1,9 +1,11 @@
 ﻿@page "/registroProducto"
 
 @inject HttpClient httpClient
+@inject NotificationService notificationService
 
 @rendermode InteractiveServer
 
+<RadzenNotification />
 <div class="container">
     <div class="card">
         <EditForm Model="producto" OnValidSubmit="Guardar">
@@ -131,6 +133,8 @@
 
     string ImageUploadMessage = "";
 
+    public NotificationMessage Mensaje { get; set; } = new NotificationMessage();
+
     protected override async Task OnInitializedAsync()
     {
         await CargarCategorias();
@@ -163,7 +167,15 @@
         }
         else
         {
-            //mensaje de error al buscar el producto
+            Mensaje = new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Error al buscar un producto",
+                Detail = "Ha ocurrido un error a la hora de buscar un producto",
+                Duration = 5_000
+            };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 
@@ -173,6 +185,14 @@
 
         if (!response.IsSuccessStatusCode)
         {
+            Mensaje = new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary ="Error al guardar",
+                Detail = "Ha ocurrido un error a la hora de guardar",
+                Duration = 5_000
+            };
+            notificationService.Notify(Mensaje);
             return;
         }
 
@@ -184,13 +204,30 @@
             StateHasChanged();
             Nuevo();
 
-            //Mensaje de que se guardo todo bien
+            Mensaje = new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Exito al guardar",
+                Detail = "El producto se ha guardado exitosamente",
+                Duration = 5_000
+            };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 
     public void Nuevo()
     {
         this.producto = new Productos();
+        Mensaje = new NotificationMessage
+            {
+                Severity = NotificationSeverity.Info,
+                Summary = "Se ha limpiado el formulario",
+                Detail = "Ahora puede rellenar nuevamente el formulario",
+                Duration = 5_000
+            };
+        notificationService.Notify(Mensaje);
+        return;
     }
 
     public async Task Eliminar()
@@ -199,11 +236,28 @@
 
         if (!response.IsSuccessStatusCode)
         {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al eliminar",
+                    Detail = "Ha ocurrido un error a la hora de eliminar",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
             return;
         }
         else
         {
             Nuevo();
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Exito al eliminar",
+                    Detail = "Ha eliminado el producto correctamente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
         }
     }
 
