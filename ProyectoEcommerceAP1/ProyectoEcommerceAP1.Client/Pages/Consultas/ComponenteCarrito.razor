@@ -2,6 +2,9 @@
 
 @inject HttpClient httpClient
 
+@rendermode InteractiveServer
+
+
 @if (productoEnCarrito != null && productoEnCarrito.Any())
 {
 
@@ -15,6 +18,7 @@
                         <th>Nombre</th>
                         <th>Descripción</th>
                         <th>Precio</th>
+                        <th>Eliminar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,7 +33,10 @@
                             </td>
                             <td>@producto.Nombre</td>
                             <td>@producto.Descripcion</td>
-                            <td>RD$ @producto.Precio</td>
+                            <td>RD$ @producto.Precio.ToString("N2")</td>
+                            <td>
+                                <button type ="button" @onclick="() => RemoverItemCarrito(producto.ItemCarritoId.Value)" class="btn btn-danger">Eliminar</button>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -54,8 +61,11 @@ else
 
 @code {
     List<Productos> productoEnCarrito;
+
+    public Productos producto { get; set; }
+
     float precioAPagar;
-    int ItemCarritoId { get; set; }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,6 +78,20 @@ else
         try
         {
             productoEnCarrito = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos/EnCarrito");
+
+            if (productoEnCarrito != null)
+            {
+                foreach (var producto in productoEnCarrito)
+                {
+                    var itemCarrito = await ObtenerItemCarrito(producto.ProductoId);
+
+                    if (itemCarrito != null)
+                    {
+                        producto.ItemCarritoId = itemCarrito.ItemCarritoId;
+                    }
+                }
+            }
+
         }
         catch (Exception ex)
         {
@@ -75,8 +99,52 @@ else
         }
     }
 
+    async Task<ItemCarrito> ObtenerItemCarrito(int productoId)
+    {
+        var response = await httpClient.GetFromJsonAsync<ItemCarrito>($"api/Carrito/Producto/{productoId}");
+        return response;
+    }
+
+
     void CalcularTotalPrecioCarrito()
     {
         precioAPagar = productoEnCarrito.Sum(p => p.Precio);
+
+        StateHasChanged();
+    }
+
+
+
+    public async Task RemoverItemCarrito(int itemCarritoId)
+    {
+        if (itemCarritoId > 0)
+        {
+            using var response = await httpClient.DeleteAsync($"api/Carrito/EliminarDetalle/{itemCarritoId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return;
+            }
+            else
+            {
+                var itemToRemove = productoEnCarrito.FirstOrDefault(item => item.ItemCarritoId == itemCarritoId);
+
+                var producto = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{itemToRemove.ProductoId}");
+
+
+                producto.EnCarrito = false;
+                itemToRemove.EnCarrito = false;
+
+                var response2 = await httpClient.PutAsJsonAsync($"api/Productos/{producto.ProductoId}", producto);
+
+
+
+                if (itemToRemove != null)
+                {
+                    productoEnCarrito.Remove(itemToRemove);
+                }
+                CalcularTotalPrecioCarrito();
+            }
+        }
     }
 }
