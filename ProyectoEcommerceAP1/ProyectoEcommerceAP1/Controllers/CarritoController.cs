@@ -49,6 +49,37 @@ namespace ProyectoEcommerceAP1.Controllers
             return carrito;
         }
 
+
+
+
+
+        [HttpGet("Producto/{productoId}")]
+        public async Task<ActionResult<ItemCarrito>> GetItemCarritoByProductoId(int productoId)
+        {
+            try
+            {
+                // Buscar el ítem del carrito asociado al productoId
+                var itemCarrito = await _context.ItemsCarrito.FirstOrDefaultAsync(ic => ic.ProductoId == productoId);
+
+                // Si no se encuentra el ítem del carrito, devolver un código de estado NotFound
+                if (itemCarrito == null)
+                {
+                    return NotFound($"No se encontró un ítem de carrito asociado al producto con ID {productoId}.");
+                }
+
+                // Si se encuentra, devolver el ítem del carrito
+                return itemCarrito;
+            }
+            catch (Exception ex)
+            {
+                // Manejar cualquier error que pueda ocurrir y devolver un código de estado 500
+                return StatusCode(500, $"Error al obtener el ítem de carrito asociado al producto con ID {productoId}: {ex.Message}");
+            }
+        }
+
+
+
+
         // PUT: api/Carrito/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
@@ -141,6 +172,61 @@ namespace ProyectoEcommerceAP1.Controllers
 
             return NoContent();
         }
+
+
+
+
+
+
+
+        //[HttpDelete("Producto/{itemCarritoId}")]
+        //public async Task<IActionResult> DeleteItemCarrito(int itemCarritoId)
+        //{
+        //    try
+        //    {
+        //        // Buscar el ítem del carrito por su ID
+        //        var itemCarrito = await _context.ItemsCarrito.FindAsync(itemCarritoId);
+
+        //        // Si no se encuentra el ítem del carrito, devolver un código de estado NotFound
+        //        if (itemCarrito == null)
+        //        {
+        //            return NotFound($"No se encontró un ítem de carrito con ID {itemCarritoId}.");
+        //        }
+
+        //        // Eliminar el ítem del carrito de la base de datos
+        //        _context.ItemsCarrito.Remove(itemCarrito);
+        //        await _context.SaveChangesAsync();
+
+        //        // Devolver un código de estado NoContent (204) para indicar que se ha eliminado con éxito
+        //        return NoContent();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Manejar cualquier error que pueda ocurrir y devolver un código de estado 500
+        //        return StatusCode(500, $"Error al eliminar el ítem de carrito con ID {itemCarritoId}: {ex.Message}");
+        //    }
+        //}
+
+        [HttpDelete("EliminarDetalle/{detalleId}")]
+        public async Task<IActionResult> DeleteDetalles(int detalleId)
+        {
+            if (detalleId < 0)
+            {
+                return BadRequest();
+            }
+
+            var detalle = await _context.ItemsCarrito.FirstOrDefaultAsync(e => e.ItemCarritoId == detalleId);
+            if (detalle == null)
+            {
+                return NotFound();
+            }
+
+            _context.ItemsCarrito.Remove(detalle);
+            await _context.SaveChangesAsync();
+
+            return Ok(detalleId);
+        }
+
 
         private bool CarritoExists(int id)
         {
