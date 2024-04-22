@@ -1,7 +1,10 @@
 ﻿@inherits LayoutComponentBase
 @inject HttpClient httpClient
 @inject NavigationManager navigationManager
+@using Microsoft.AspNetCore.Identity
+@using ProyectoEcommerceAP1.Data
 @using Shared.Models
+@inject UserManager<ApplicationUser> UserManager
 
 <RadzenNotification />
 
@@ -15,17 +18,19 @@
     <main>
         <div class="top-row px-4">
             <div class="row justify-content-between">
-                <div class="col-auto">
-                    @if (productoEnCarrito != null)
-                    {
-                        <div class="carrito-btn">
-                            <a href="/carrito">
-                                <button type="button"class="btn btn-outline-primary">
-                                <i class="bi bi-cart"></i> Carrito <span class="badge bg-secondary">@cantidadProductosEnCarrito</span>
-                            </button></a>
-                        </div>
-                    }
-                </div>
+                <AuthorizeView>
+                    <div class="col-auto">
+                        @if (cantidadProductosEnCarrito != null)
+                        {
+                            <div class="carrito-btn">
+                                <a href="/carrito">
+                                    <button type="button"class="btn btn-outline-primary">
+                                        <i class="bi bi-cart"></i> Carrito <span class="badge bg-secondary">@cantidadProductosEnCarrito</span>
+                                </button></a>
+                            </div>
+                        }
+                    </div>
+                </AuthorizeView>
 @* 
                 <div class="col">
                     <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
@@ -50,24 +55,43 @@
 
 
 @code {
-    List<Productos> productoEnCarrito;
+    List<ItemCarrito> detallesCarrito;
     int cantidadProductosEnCarrito;
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarProductosEnCarrito();
+        await CargarDetallesCarrito();
         CalcularCantidadProductosEnCarrito();
     }
 
-    async Task CargarProductosEnCarrito()
+    async Task CargarDetallesCarrito()
     {
-        var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
-        productoEnCarrito = productos.Where(p => p.EnCarrito).ToList();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.Identity.IsAuthenticated)
+        {
+            var usuario = await UserManager.GetUserAsync(authState.User);
+
+            if (usuario != null)
+            {
+                var userId = usuario.Id;
+
+                detallesCarrito = await httpClient.GetFromJsonAsync<List<ItemCarrito>>($"api/Carrito/Items/{userId}");
+            }
+            else
+            {
+                Console.WriteLine("La reclamacion 'sub' no esta presente en el token de autenticacion");
+            }
+        }
+        else
+        {
+            Console.WriteLine("El usuario no esta autenticado");
+        }
     }
 
     void CalcularCantidadProductosEnCarrito()
     {
-        cantidadProductosEnCarrito = productoEnCarrito != null ? productoEnCarrito.Count : 0;
+        cantidadProductosEnCarrito = detallesCarrito != null ? detallesCarrito.Count : 0;
     }
 
 }
