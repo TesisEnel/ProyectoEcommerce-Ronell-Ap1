@@ -1,0 +1,188 @@
+﻿@page "/carrito"
+@using Microsoft.AspNetCore.Identity
+@using Newtonsoft.Json
+@using ProyectoEcommerceAP1.Data
+@using global::Shared.Models
+
+@using Microsoft.AspNetCore.Components.Authorization
+
+
+@inject HttpClient httpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+@rendermode InteractiveServer
+
+
+@if (detallesCarrito != null && detallesCarrito.Any())
+{
+
+    <div class="container">
+        <h2 class="text-center">Productos en el carrito</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var detalle in detallesCarrito)
+                    {
+                        <tr>
+                            <td>
+                                @if (!string.IsNullOrEmpty(detalle.Producto.ImagenProducto))
+                                {
+                                    <img src="@detalle.Producto.ImagenProducto" alt="Imagen del producto" class="img-fluid rounded" style="max-width: 100px;" />
+                                }
+                            </td>
+                            <td>@detalle.Producto.Nombre</td>
+                            <td>@detalle.Producto.Descripcion</td>
+                            <td>RD$ @detalle.Producto.Precio.ToString("N2")</td>
+                            <td>
+                                <button type="button" @onclick="() => RemoverItemCarrito(detalle.ItemCarritoId)" class="btn btn-danger">Eliminar</button>
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-right">Total:</td>
+                        <td class="text-right">RD$ @precioAPagar</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+}
+
+else
+{
+    <p class="text-center">No hay productos en el carrito</p>
+}
+
+
+
+@code {
+
+    List<ItemCarrito> detallesCarrito;
+
+    public Productos producto { get; set; }
+
+    float precioAPagar;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.Identity.IsAuthenticated)
+        {
+            var usuario = await UserManager.GetUserAsync(authState.User);
+
+            await CargarProductosEnCarrito(usuario.Id);
+        }
+
+    }
+
+
+    async Task CargarProductosEnCarrito(string userId)
+    {
+        try
+        {
+            detallesCarrito = await httpClient.GetFromJsonAsync<List<ItemCarrito>>($"api/Carrito/Items/{userId}");
+
+            if(detallesCarrito != null)
+            {
+                foreach(var detalle in detallesCarrito)
+                {
+                    var productoResponse = await httpClient.GetAsync($"api/Productos/{detalle.ProductoId}");
+
+                    if (productoResponse.IsSuccessStatusCode)
+                    {
+                        var productoContent = await productoResponse.Content.ReadAsStringAsync();
+                        var producto = JsonConvert.DeserializeObject<Productos>(productoContent);
+                        detalle.Producto = producto;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+            }
+
+            CalcularTotalPrecioCarrito();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar productos en el carrito: {ex.Message}");
+        }
+    }
+
+    async Task<ItemCarrito> ObtenerItemCarrito(int productoId)
+    {
+        var response = await httpClient.GetFromJsonAsync<ItemCarrito>($"api/Carrito/Producto/{productoId}");
+        return response;
+    }
+
+
+    void CalcularTotalPrecioCarrito()
+    {
+        if (detallesCarrito != null && detallesCarrito.Any())
+        {
+            precioAPagar = detallesCarrito.Sum(detalle => detalle.Producto.Precio);
+        }
+        else
+        {
+            precioAPagar = 0;
+        }
+    }
+
+
+    public async Task RemoverItemCarrito(int itemCarritoId)
+    {
+        if (itemCarritoId > 0)
+        {
+            try
+            {
+                var response = await httpClient.DeleteAsync($"api/Carrito/EliminarDetalle/{itemCarritoId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    detallesCarrito.RemoveAll(de => de.ItemCarritoId == itemCarritoId);
+                    CalcularTotalPrecioCarrito();
+
+
+                    var detalleEliminado = detallesCarrito.FirstOrDefault(p => p.ItemCarritoId == itemCarritoId);
+
+                    if (detalleEliminado != null)
+                    {
+                        detalleEliminado.Producto.EnCarrito = false;
+                        var updateResponse = await httpClient.PutAsJsonAsync($"api/Productos/{producto.ProductoId}", producto);
+
+                        if (!updateResponse.IsSuccessStatusCode)
+                        {
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al eliminar el producto del carrito: {ex.Message}");
+            }
+        }
+    }
+
+}
