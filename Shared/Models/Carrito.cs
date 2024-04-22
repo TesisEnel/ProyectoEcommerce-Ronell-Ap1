@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace Shared.Models
 {
     public class Carrito
@@ -13,14 +14,14 @@ namespace Shared.Models
         [Key]
         public int CarritoId { get; set; }
 
-        [Required]
-        public int ClienteId {  get; set; }
 
-        [ForeignKey("ClienteId")]
-        public Clientes Cliente { get; set; }
+        public string UserId { get; set; } = string.Empty;
+
 
         public ICollection<ItemCarrito> Items { get; set; } = new List<ItemCarrito>();
 
         public float Total { get; set; }
+
+
     }
 }
