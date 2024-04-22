@@ -28,7 +28,8 @@ namespace ProyectoEcommerceAP1.Controllers
             return await _context.Productos.ToListAsync();
         }
 
-        [HttpGet("EnCarrito")]
+
+        [HttpGet("EnCarrito/{userId}")]
         public async Task<ActionResult<IEnumerable<Productos>>> GetProductosEnCarrito()
         {
             return await _context.Productos.Where(p => p.EnCarrito).ToListAsync();
@@ -59,7 +60,6 @@ namespace ProyectoEcommerceAP1.Controllers
             {
                 return BadRequest();
             }
-
             _context.Entry(productos).State = EntityState.Modified;
 
             try
