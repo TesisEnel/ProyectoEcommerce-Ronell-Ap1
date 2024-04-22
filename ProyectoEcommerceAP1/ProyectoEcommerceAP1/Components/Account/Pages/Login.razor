@@ -9,6 +9,7 @@
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject ApplicationDbContext dbContext
 
 <PageTitle>Log in</PageTitle>
 
@@ -92,6 +93,11 @@
         var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
         if (result.Succeeded)
         {
+
+            var user = await SignInManager.UserManager.FindByEmailAsync(Input.Email);
+            var carrito = dbContext.Carrito.FirstOrDefault(car => car.UserId == user.Id);
+
+            
             Logger.LogInformation("User logged in.");
             RedirectManager.RedirectTo(ReturnUrl);
         }

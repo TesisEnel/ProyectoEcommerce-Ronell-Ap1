@@ -1,0 +1,256 @@
+﻿@page "/detalleProducto/{ProductoId}"
+
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Identity
+@using ProyectoEcommerceAP1.Data
+@using ProyectoEcommerceAP1
+@using Microsoft.AspNetCore.Http
+
+
+@using System.ComponentModel.DataAnnotations
+
+@inject HttpClient httpClient
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IHttpContextAccessor httpContextAccessor
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@using System.Net.Http.Json
+@using System.Security.Claims
+@using global::Shared.Models
+
+
+
+
+@if (producto != null)
+{
+    <div class="container text-center">
+        <div class="card">
+            <div class="media">
+                <div class="img-container">
+                    @if (producto.ImagenProducto != null)
+                    {
+                        <img src="@producto.ImagenProducto" alt="Imagen del producto" class="img-fluid" />
+                    }
+                </div>
+
+                <div class="media-body">
+                    <h2 class="mb-0">@(producto != null ? producto.Nombre : "Producto no encontrado")</h2>
+                    <p>@producto.Descripcion</p>
+                    @if (producto.Precio > producto.PrecioOferta)
+                    {
+                        <h6 class="text-muted original-price">RD$ @producto.Precio</h6>
+                    }
+                    else
+                    {
+                        <h6>RD$ @producto.Precio</h6>
+                    }
+
+                    <h4 class="price">
+                        RD$ @producto.Precio
+                    </h4>
+
+                    <button @onclick="AgregarCarrito" type="button" class="btn btn-outline-primary"><i class="bi bi-cart"></i> Agregar al carrito</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public Productos producto { get; set; }
+
+    [Parameter]
+    public string ProductoId { get; set; }
+
+    public Carrito carrito { get; set; } = new Carrito();
+
+    private Carrito usuarioCarrito;
+
+    protected HttpContext httpContext => httpContextAccessor.HttpContext;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProducto();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            carrito = await ObtenerCarritoUsuario(user.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            if (carrito == null)
+            {
+                carrito = new Carrito
+                    {
+                        UserId = user.FindFirst(ClaimTypes.NameIdentifier).Value,
+                        Items = new List<ItemCarrito>()
+                    };
+
+                var response = await httpClient.PostAsJsonAsync("api/Carrito", carrito);
+                if (response.IsSuccessStatusCode)
+                {
+                    var carritoCreado = await response.Content.ReadFromJsonAsync<Carrito>();
+                    if (carritoCreado != null)
+                    {
+                        carrito.CarritoId = carritoCreado.CarritoId;
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task CargarProducto()
+    {
+        var response = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{ProductoId}");
+        if (response != null)
+        {
+            producto = response;
+        }
+    }
+
+    public async Task<Carrito> ObtenerCarritoUsuario(string userId)
+    {
+        try
+        {
+            if (usuarioCarrito != null)
+            {
+                return usuarioCarrito;
+            }
+
+            var response = await httpClient.GetAsync($"api/Carrito/Usuario/{userId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var carrito = await response.Content.ReadFromJsonAsync<Carrito>();
+
+                usuarioCarrito = carrito;
+
+                return carrito;
+            }
+            else
+            {
+                Console.WriteLine($"La solicitud al servidor no fue exitosa. Código de estado: {response.StatusCode}");
+                return null;
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Error al obtener el carrito del usuario: {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error inesperado al obtener el carrito del usuario: {ex.Message}");
+            return null;
+        }
+    }
+
+
+    private async Task CargarCarrito()
+    {
+        const int intentosMaximos = 3;
+        int intentoActual = 0;
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var usuario = await UserManager.GetUserAsync(authState.User);
+
+                if (carrito == null)
+                {
+                    carrito = await ObtenerCarritoUsuario(usuario.Id);
+
+                    if (carrito == null)
+                    {
+                        carrito = new Carrito
+                            {
+                                UserId = usuario.Id,
+                                Items = new List<ItemCarrito>()
+                            };
+
+                        var response = await httpClient.PostAsJsonAsync("api/Carrito", carrito);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var carritoCreado = await response.Content.ReadFromJsonAsync<Carrito>();
+                            if (carritoCreado != null)
+                            {
+                                carrito.CarritoId = carritoCreado.CarritoId;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("El usuario no se encuentra autenticado");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar el carrito: {ex.Message}");
+
+            intentoActual++;
+
+            await Task.Delay(1000);
+        }
+    }
+
+
+    public void AgregarCarrito()
+    {
+        try
+        {
+            if (producto != null && carrito != null)
+                {
+                    var itemCarrito = new ItemCarrito
+                            {
+                                ProductoId = producto.ProductoId,
+                                Producto = producto,
+                                Cantidad = 1,
+                                SubTotal = producto.PrecioOferta,
+                            };
+
+
+                    carrito.Items.Add(itemCarrito);
+
+                    var response = httpClient.PostAsJsonAsync($"api/Carrito/{carrito.CarritoId}/Items", itemCarrito).Result;
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorMessage =  response.Content.ReadAsStringAsync().Result;
+                        Console.WriteLine($"Error al agregar el producto al carrito: {response.ReasonPhrase}. Detalles: {errorMessage}");
+                        return;
+                    }
+                    else
+                    {
+                        carrito =  ObtenerCarritoUsuario(carrito.UserId).Result;
+                        producto.EnCarrito = true;
+                        StateHasChanged();
+                    }
+                        
+                }
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Error de solicitud HTTP: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error inesperado: {ex.Message}");
+        }
+    }
+
+    private async Task<Clientes> ObtenerClienteAsync(int clienteId)
+    {
+        var response = await httpClient.GetFromJsonAsync<Clientes>($"api/Clientes/{clienteId}");
+
+        return response;
+    }
+}
