@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ProyectoEcommerceAP1.Data;
 using ProyectoEcommerceAP1.Data;
 using Shared.Models;
 
@@ -15,10 +12,13 @@ namespace ProyectoEcommerceAP1.Controllers
     public class CarritoController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> userManager;
 
-        public CarritoController(ApplicationDbContext context)
+
+        public CarritoController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            this.userManager = userManager;
         }
 
         // GET: api/Carrito
@@ -32,7 +32,7 @@ namespace ProyectoEcommerceAP1.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Carrito>> GetCarrito(int id)
         {
-            if(_context.Carrito == null)
+            if (_context.Carrito == null)
             {
                 return NotFound();
             }
@@ -41,7 +41,7 @@ namespace ProyectoEcommerceAP1.Controllers
                             .Where(car => car.CarritoId == id)
                             .FirstOrDefaultAsync();
 
-            if(carrito == null)
+            if (carrito == null)
             {
                 return NotFound();
             }
@@ -50,6 +50,72 @@ namespace ProyectoEcommerceAP1.Controllers
         }
 
 
+        [HttpGet("Items/{userId}")]
+        public async Task<ActionResult<List<ItemCarrito>>> GetItemsCarritoByUserId(string userId)
+        {
+            try
+            {
+                var detallesCarrito = await _context.ItemsCarrito.Where(ic => ic.Carrito.UserId == userId).ToListAsync();
+                return Ok(detallesCarrito);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al obtener los detalles del carrito: {ex.Message}");
+            }
+        }
+
+
+
+        [HttpGet("Usuario/{userId}")]
+        public async Task<ActionResult<Carrito>> GetCarritoUsuario(string userId)
+        {
+            try
+            {
+                var carrito = await _context.Carrito
+                                    .Include(c => c.Items)
+                                    .ThenInclude(ic => ic.Producto)
+                                    .FirstOrDefaultAsync(c => c.UserId == userId);
+
+                if (carrito == null)
+                {
+                    var existingCarrito = await _context.Carrito.FirstOrDefaultAsync(c => c.UserId == userId);
+
+                    if (existingCarrito != null)
+                    {
+                        return existingCarrito;
+                    }
+                    carrito = new Carrito { UserId = userId, Items = new List<ItemCarrito>() };
+                    _context.Carrito.Add(carrito);
+                    await _context.SaveChangesAsync();
+                }
+
+                return carrito;
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al obtener el carrito del usuario: {ex.Message}");
+            }
+        }
+
+
+        [HttpGet("EnCarrito/{userId}")]
+        public async Task<ActionResult<IEnumerable<Productos>>> GetProductosEnCarrito(string userId)
+        {
+            try
+            {
+                var productosEnCarrito = await (from p in _context.Productos
+                                                join ic in _context.ItemsCarrito on p.ProductoId equals ic.ProductoId
+                                                join c in _context.Carrito on ic.Carrito.CarritoId equals c.CarritoId
+                                                where c.UserId == userId
+                                                select p).ToListAsync();
+
+                return Ok(productosEnCarrito);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al obtener productos en el carrito: {ex.Message}");
+            }
+        }
 
 
 
@@ -58,7 +124,6 @@ namespace ProyectoEcommerceAP1.Controllers
         {
             try
             {
-                
                 var itemCarrito = await _context.ItemsCarrito.FirstOrDefaultAsync(ic => ic.ProductoId == productoId);
 
                 
@@ -67,7 +132,6 @@ namespace ProyectoEcommerceAP1.Controllers
                     return NotFound($"No se encontró un ítem de carrito asociado al producto con ID {productoId}.");
                 }
 
-                
                 return itemCarrito;
             }
             catch (Exception ex)
@@ -111,44 +175,90 @@ namespace ProyectoEcommerceAP1.Controllers
             return NoContent();
         }
 
-        // POST: api/Carrito
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Carrito>> PostCarrito(Carrito carrito)
         {
             try
             {
-                // Asegúrate de cargar el cliente desde la base de datos
-                var cliente = await _context.Clientes.FindAsync(carrito.ClienteId);
-                if (cliente == null)
+                var user = await userManager.FindByIdAsync(carrito.UserId);
+                if (user == null)
                 {
-                    return BadRequest("El cliente especificado no existe.");
+                    return BadRequest("El usuario especificado no existe.");
                 }
 
-                // Asigna el cliente al carrito
-                carrito.Cliente = cliente;
-
-                // Agrega los elementos del carrito
-                foreach (var item in carrito.Items)
+                var carritoExistente = await _context.Carrito.FirstOrDefaultAsync(c => c.UserId == carrito.UserId);
+                if (carritoExistente != null)
                 {
-                    var producto = await _context.Productos.FindAsync(item.ProductoId);
-                    if (producto == null)
+                    foreach (var item in carrito.Items)
                     {
-                        return BadRequest($"El producto con ID {item.ProductoId} no existe.");
+                        var producto = await _context.Productos.FindAsync(item.ProductoId);
+                        if (producto == null)
+                        {
+                            return BadRequest($"El producto con ID {item.ProductoId} no existe.");
+                        }
+                        item.Producto = producto;
+                        carritoExistente.Items.Add(item);
                     }
-                    item.Producto = producto;
-                    // Calcula el subtotal del item (si es necesario)
+
+                    await _context.SaveChangesAsync();
+                    return Ok(carritoExistente);
                 }
+                else
+                {
+                    carrito.UserId = user.Id;
 
-                // Agrega el carrito a la base de datos
-                _context.Carrito.Add(carrito);
-                await _context.SaveChangesAsync();
+                    foreach (var item in carrito.Items)
+                    {
+                        var producto = await _context.Productos.FindAsync(item.ProductoId);
+                        if (producto == null)
+                        {
+                            return BadRequest($"El producto con ID {item.ProductoId} no existe.");
+                        }
 
-                return Ok(carrito);
+                        item.Producto = producto;
+                    }
+
+                    _context.Carrito.Add(carrito);
+                    await _context.SaveChangesAsync();
+
+                    return Ok(carrito);
+                }
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Se produjo un error al procesar la solicitud: {ex.Message}");
+            }
+        }
+
+
+        [HttpPost("{carritoId}/Items")]
+        public async Task<ActionResult<ItemCarrito>> PostItemCarrito(int carritoId, ItemCarrito itemCarrito)
+        {
+            try
+            {
+                var carrito = await _context.Carrito.FindAsync(carritoId);
+                if (carrito == null)
+                {
+                    return NotFound($"No se encontró un carrito con ID {carritoId}.");
+                }
+
+                var producto = await _context.Productos.FindAsync(itemCarrito.ProductoId);
+                if (producto == null)
+                {
+                    return BadRequest($"El producto con ID {itemCarrito.ProductoId} no existe.");
+                }
+                itemCarrito.Carrito = carrito;
+
+                itemCarrito.Producto = producto;
+
+                _context.ItemsCarrito.Add(itemCarrito);
+                await _context.SaveChangesAsync();
+
+                return Ok(itemCarrito);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Se produjo un error al agregar el ítem al carrito: {ex.Message}");
             }
         }
 
@@ -172,9 +282,6 @@ namespace ProyectoEcommerceAP1.Controllers
 
             return NoContent();
         }
-
-
-
 
 
         [HttpDelete("EliminarDetalle/{detalleId}")]
