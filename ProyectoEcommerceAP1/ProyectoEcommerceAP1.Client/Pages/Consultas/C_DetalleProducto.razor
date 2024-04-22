@@ -1,5 +1,18 @@
-﻿@page "/detalleProducto/{ProductoId}"
+﻿@* @page "/detalleProducto/{ProductoId}"
+
+@using Microsoft.AspNetCore.Identity
+@using ProyectoEcommerceAP1.Data.Models
+
+@using ProyectoEcommerceAP1
+
+@using System.ComponentModel.DataAnnotations
+
+
 @inject HttpClient httpClient
+@inject SignInManager<ApplicationUser> SignInManager
+@inject Microsoft.AspNetCore.Http.HttpContext HttpContext
+
+
 @using Shared.Models
 @using System.Net.Http.Json
 
@@ -64,28 +77,24 @@
     {
         if (producto != null)
         {
+            var user = await SignInManager.UserManager.GetUserAsync(HttpContext.User);
 
-            var cliente = await ObtenerClienteAsync(2);
-
-            if(cliente != null)
+            if(user != null)
             {
                 var carrito = new Carrito
-                    {
-                        ClienteId = 2,
-                        Cliente = cliente,
-                        Total = 23784
-                    };
+                {
+                    UserId = user.Id,
+                    Total = 2444
+                };
 
                 var itemCarrito = new ItemCarrito
-                    {
-                        ProductoId = producto.ProductoId,
-                        Producto = producto,
-                        Cantidad = 1,
-                        SubTotal = producto.PrecioOferta 
-                    };
+                {
+                    ProductoId = producto.ProductoId,
+                    Cantidad = 1,
+                    SubTotal = producto.PrecioOferta
+                };
 
                 carrito.Items.Add(itemCarrito);
-
 
                 var response = await httpClient.PostAsJsonAsync("api/Carrito", carrito);
 
@@ -95,14 +104,14 @@
                 }
                 else
                 {
-                    //se agrego el producto al carrito
+                    //producto agregado con exito
                 }
 
-                if (producto != null)
+                if(producto != null)
                 {
                     if (producto.EnCarrito == true)
                     {
-                        //mensaje de que ya ha sido agregado al carrito
+                        // Mensaje indicando que el producto ya está en el carrito
                     }
                     else
                     {
@@ -116,12 +125,71 @@
                         }
                         else
                         {
-                            //todo bien
+                            //producto marcado como agregado al carrito
                         }
                         StateHasChanged();
                     }
                 }
+
+
             }
+            // var cliente = await ObtenerClienteAsync(2);
+
+            // if(cliente != null)
+            // {
+            //     var carrito = new Carrito
+            //         {
+            //             ClienteId = 2,
+            //             Cliente = cliente,
+            //             Total = 23784
+            //         };
+
+            //     var itemCarrito = new ItemCarrito
+            //         {
+            //             ProductoId = producto.ProductoId,
+            //             Producto = producto,
+            //             Cantidad = 1,
+            //             SubTotal = producto.PrecioOferta 
+            //         };
+
+            //     carrito.Items.Add(itemCarrito);
+
+
+            //     var response = await httpClient.PostAsJsonAsync("api/Carrito", carrito);
+
+            //     if (!response.IsSuccessStatusCode)
+            //     {
+            //         return;
+            //     }
+            //     else
+            //     {
+            //         //se agrego el producto al carrito
+            //     }
+
+            //     if (producto != null)
+            //     {
+            //         if (producto.EnCarrito == true)
+            //         {
+            //             //mensaje de que ya ha sido agregado al carrito
+            //         }
+            //         else
+            //         {
+            //             producto.EnCarrito = true;
+
+            //             var response2 = await httpClient.PutAsJsonAsync($"api/Productos/{producto.ProductoId}", producto);
+
+            //             if (!response2.IsSuccessStatusCode)
+            //             {
+            //                 return;
+            //             }
+            //             else
+            //             {
+            //                 //todo bien
+            //             }
+            //             StateHasChanged();
+            //         }
+            //     }
+            // }
         }
     }
 
@@ -131,4 +199,4 @@
 
         return response;
     }
-}
+} *@
