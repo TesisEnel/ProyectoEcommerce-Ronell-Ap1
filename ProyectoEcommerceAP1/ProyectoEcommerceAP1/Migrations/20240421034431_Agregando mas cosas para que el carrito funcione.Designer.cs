@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProyectoEcommerceAP1.Data;
 
@@ -10,9 +11,11 @@ using ProyectoEcommerceAP1.Data;
 namespace ProyectoEcommerceAP1.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240421034431_Agregando mas cosas para que el carrito funcione")]
+    partial class Agregandomascosasparaqueelcarritofuncione
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.4");
@@ -157,6 +160,9 @@ namespace ProyectoEcommerceAP1.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("CarritoId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
@@ -214,6 +220,8 @@ namespace ProyectoEcommerceAP1.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CarritoId");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -230,6 +238,9 @@ namespace ProyectoEcommerceAP1.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<float>("Total")
                         .HasColumnType("REAL");
 
@@ -238,6 +249,8 @@ namespace ProyectoEcommerceAP1.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("CarritoId");
+
+                    b.HasIndex("ClienteId");
 
                     b.ToTable("Carrito");
                 });
@@ -315,7 +328,7 @@ namespace ProyectoEcommerceAP1.Migrations
                     b.Property<int>("Cantidad")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("CarritoId")
+                    b.Property<int>("CarritoId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ProductoId")
@@ -465,6 +478,28 @@ namespace ProyectoEcommerceAP1.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ProyectoEcommerceAP1.Data.ApplicationUser", b =>
+                {
+                    b.HasOne("Shared.Models.Carrito", "Carrito")
+                        .WithMany()
+                        .HasForeignKey("CarritoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Carrito");
+                });
+
+            modelBuilder.Entity("Shared.Models.Carrito", b =>
+                {
+                    b.HasOne("Shared.Models.Clientes", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+                });
+
             modelBuilder.Entity("Shared.Models.ClientesDetalle", b =>
                 {
                     b.HasOne("Shared.Models.Clientes", null)
@@ -478,7 +513,9 @@ namespace ProyectoEcommerceAP1.Migrations
                 {
                     b.HasOne("Shared.Models.Carrito", "Carrito")
                         .WithMany("Items")
-                        .HasForeignKey("CarritoId");
+                        .HasForeignKey("CarritoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Shared.Models.Productos", "Producto")
                         .WithMany()

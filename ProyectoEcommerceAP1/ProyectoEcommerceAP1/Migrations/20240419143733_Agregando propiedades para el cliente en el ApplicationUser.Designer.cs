@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProyectoEcommerceAP1.Data;
 
@@ -10,9 +11,11 @@ using ProyectoEcommerceAP1.Data;
 namespace ProyectoEcommerceAP1.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240419143733_Agregando propiedades para el cliente en el ApplicationUser")]
+    partial class AgregandopropiedadesparaelclienteenelApplicationUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.4");
@@ -230,14 +233,15 @@ namespace ProyectoEcommerceAP1.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<float>("Total")
                         .HasColumnType("REAL");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.HasKey("CarritoId");
+
+                    b.HasIndex("ClienteId");
 
                     b.ToTable("Carrito");
                 });
@@ -465,6 +469,17 @@ namespace ProyectoEcommerceAP1.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Shared.Models.Carrito", b =>
+                {
+                    b.HasOne("Shared.Models.Clientes", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+                });
+
             modelBuilder.Entity("Shared.Models.ClientesDetalle", b =>
                 {
                     b.HasOne("Shared.Models.Clientes", null)
@@ -476,7 +491,7 @@ namespace ProyectoEcommerceAP1.Migrations
 
             modelBuilder.Entity("Shared.Models.ItemCarrito", b =>
                 {
-                    b.HasOne("Shared.Models.Carrito", "Carrito")
+                    b.HasOne("Shared.Models.Carrito", null)
                         .WithMany("Items")
                         .HasForeignKey("CarritoId");
 
@@ -485,8 +500,6 @@ namespace ProyectoEcommerceAP1.Migrations
                         .HasForeignKey("ProductoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Carrito");
 
                     b.Navigation("Producto");
                 });
