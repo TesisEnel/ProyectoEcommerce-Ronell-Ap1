@@ -6,6 +6,9 @@ using ProyectoEcommerceAP1.Components;
 using ProyectoEcommerceAP1.Components.Account;
 using ProyectoEcommerceAP1.Data;
 using Radzen;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Components.Server;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +21,15 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
+
+builder.Services.AddHttpContextAccessor();
+
+//builder.Services.AddRazorPages().AddServerSideBlazor();
+builder.Services.Configure<CircuitOptions>(options =>
+{
+    options.DetailedErrors = true;
+});
+
 
 builder.Services.AddAuthentication(options =>
     {
