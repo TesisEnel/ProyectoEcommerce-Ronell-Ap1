@@ -11,32 +11,60 @@
 
 <PageTitle>Profile</PageTitle>
 
-<h3>Profile</h3>
+<h3>Perfil</h3>
 <StatusMessage />
 
-<div class="row">
-    <div class="col-md-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
+<EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" role="alert" />
+
+    <div class="row">
+        <div class="col-md-6">
+                <div class="form-floating mb-3">
+                    <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
+                    <label for="username" class="form-label">Username</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <InputDate @bind-Value="Input.FechaNacimiento" class="form-control" placeholder="Ingrese su fecha de nacimiento." />
+                    <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento</label>
+                    <ValidationMessage For="() => Input.FechaNacimiento" class="text-danger" />
+                </div>
+        </div>
+
+        <div class="col-md-6">
             <div class="form-floating mb-3">
-                <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
+                <InputText @bind-Value="Input.NombreC" class="form-control" placeholder="Ingrese su nombre." />
+                <label for="nombreCliente" class="form-label">Nombre</label>
+                <ValidationMessage For="() => Input.NombreC" class="text-danger" />
             </div>
+
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
-                <label for="phone-number" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+                <InputText @bind-Value="Input.ApellidoC" class="form-control" placeholder="Ingrese su apellido." />
+                <label for="apellidoCliente" class="form-label">Apellido</label>
+                <ValidationMessage For="() => Input.ApellidoC" class="text-danger" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
-        </EditForm>
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.NumeroC" class="form-control" placeholder="Ingrese su numero de cedula." />
+                <label for="numeroCedula" class="form-label">Numero de cedula</label>
+                <ValidationMessage For="() => Input.NumeroC" class="text-danger" />
+            </div>
+        </div>
+
+
+        <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
     </div>
-</div>
+</EditForm>
 
 @code {
     private ApplicationUser user = default!;
     private string? username;
     private string? phoneNumber;
+    private string? nombre;
+    private string? apellido;
+    private DateTime FechaN;
+    private string? numCedula;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -50,19 +78,36 @@
         username = await UserManager.GetUserNameAsync(user);
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
+        nombre = user.NombreCliente;
+        apellido = user.ApellidoCliente;
+        FechaN = user.FechaNacimiento;
+        numCedula = user.NumeroCedula;
+
+
         Input.PhoneNumber ??= phoneNumber;
+
+        Input.NombreC = nombre;
+        Input.ApellidoC = apellido;
+        Input.FechaNacimiento = FechaN;
+        Input.NumeroC = numCedula;
     }
 
     private async Task OnValidSubmitAsync()
     {
-        if (Input.PhoneNumber != phoneNumber)
-        {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
-            {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
-            }
+        user.PhoneNumber = Input.PhoneNumber;
+        user.NombreCliente = Input.NombreC;
+        user.ApellidoCliente = Input.ApellidoC;
+        user.FechaNacimiento = Input.FechaNacimiento;
+        user.NumeroCedula = Input.NumeroC;
+
+        var actualizarResultado = await UserManager.UpdateAsync(user);
+
+
+        if (!actualizarResultado.Succeeded)
+        {  
+            RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set the user.", HttpContext); 
         }
+        
 
         await SignInManager.RefreshSignInAsync(user);
         RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
@@ -73,5 +118,14 @@
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
+
+        public string NombreC { get; set; } = string.Empty;
+
+        public string ApellidoC { get; set; } = string.Empty;
+
+        public DateTime FechaNacimiento { get; set; }
+
+        public string NumeroC { get; set; } = string.Empty;
+
     }
 }
