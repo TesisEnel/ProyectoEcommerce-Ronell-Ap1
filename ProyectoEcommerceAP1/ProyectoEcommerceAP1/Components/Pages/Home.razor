@@ -1,7 +1,93 @@
 ﻿@page "/"
+@page "/{UtlCategoria}"
+
+@using Shared.Models
+
+@inject HttpClient httpClient
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
 
-Welcome to your new app.
+@if(categoria != null)
+{
+    <h2>Bienvenido a la seccion de @categoria.NombreCategoria del Hogar Macorisano</h2>
+    <ProyectoEcommerceAP1.Client.Pages.Consultas.CatalogoProductos CategoriaId= "@categoria.CategoriaId" />
+
+}
+else
+{
+    <h1>Bienvenido a la tienda del hogar macorisano</h1>
+    <h4>El Hogar Macorisano: Tu Destino para Productos de Calidad.</h4>
+    <p>
+        En la fantastica ciudad de San Francisco de Macoris, se rige con elegancia
+        "El Hogar Macorisano", una tienda que se ha ganado la confianza y
+        lealtad de la comunidad local gracias a su compromiso con la calidad y
+        variedad de productos para el hogar. Desde electrodomésticos hasta
+        artículos decorativos, esta tienda es un verdadero paraíso para
+        aquellos que buscan mejorar su espacio vital.
+    </p>
+    <br />
+    <h4>Catálogo: Un Mundo de Opciones a tu Alcance</h4>
+    <p>
+        Una de las joyas de El Hogar Macorisano es su catálogo, una experiencia
+        de compra en línea que permite a los clientes explorar una amplia gama de
+        productos desde la comodidad de sus hogares. Con solo unos clics, los
+        visitantes pueden sumergirse en un océano de opciones dividido hábilmente
+        en categorías para facilitar la búsqueda del producto deseado.
+    </p>
+    <br />
+
+    <h4>El Hogar Macorisano, Mucho Más que una Tienda</h4>
+
+    <p>
+        En resumen, El Hogar Macorisano no es solo una tienda; es una
+        experiencia. Espero que disfrute de su estancia.
+    </p>
+    <br />
+    <h5>Le recomiendo que se dirija al apartado que dice Catalogo para visualizar todos los productos que tenemos en venta. Que la pase bien :)</h5>
+    <br />
+    
+}
+
+
+
+
+
+
+@code
+{
+    [Parameter]
+    public string UtlCategoria { get; set; }
+
+    private Categorias categoria {get; set;} = new Categorias();
+
+    public List<Categorias> categorias {get; set;}
+
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarCategorias();
+        if (UtlCategoria != null)
+        {
+            categoria = categorias.FirstOrDefault(c => c.Url.ToLower().Equals(UtlCategoria.ToLower()));
+        }
+
+        if (UtlCategoria == null)
+        {
+            categoria = null;
+        }
+    }
+
+    private async Task CargarCategorias()
+    {
+        try
+        {
+            categorias = await httpClient.GetFromJsonAsync<List<Categorias>>("api/Categorias");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar las categorías: {ex.Message}");
+        }
+    }
+}
