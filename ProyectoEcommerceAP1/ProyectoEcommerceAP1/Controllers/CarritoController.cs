@@ -389,6 +389,36 @@ namespace ProyectoEcommerceAP1.Controllers
         }
 
 
+
+        // DELETE: api/Carrito/EliminarDetalles/{userId}
+        [HttpDelete("EliminarDetalles/{userId}")]
+        public async Task<IActionResult> DeleteDetalles(string userId)
+        {
+            try
+            {
+                var carrito = await _context.Carrito.Include(c => c.Items).FirstOrDefaultAsync(c => c.UserId == userId);
+
+                if (carrito == null)
+                {
+                    return NotFound($"No se encontró el carrito del usuario con ID {userId}.");
+                }
+
+                _context.ItemsCarrito.RemoveRange(carrito.Items);
+                await _context.SaveChangesAsync();
+
+                return Ok("Todos los productos del carrito han sido eliminados correctamente.");
+            }
+            catch(TaskCanceledException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al eliminar los productos del carrito: {ex.Message}");
+            }
+        }
+
+
         private bool CarritoExists(int id)
         {
             return _context.Carrito.Any(e => e.CarritoId == id);
