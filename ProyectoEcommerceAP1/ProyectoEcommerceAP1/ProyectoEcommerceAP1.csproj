@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NetcodeHub.Packages.Components.Modal" Version="1.0.0" />
     <PackageReference Include="Radzen.Blazor" Version="4.29.8" />
+    <PackageReference Include="Stripe.net" Version="43.23.0" />
     <ProjectReference Include="..\..\Shared\Shared.csproj" />
     <ProjectReference Include="..\ProyectoEcommerceAP1.Client\ProyectoEcommerceAP1.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="8.0.4" />
