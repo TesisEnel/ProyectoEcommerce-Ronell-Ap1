@@ -2,6 +2,8 @@
 @using Microsoft.AspNetCore.Identity
 @using Newtonsoft.Json
 @using ProyectoEcommerceAP1.Data
+@using Stripe
+@using Stripe.Checkout
 @using global::Shared.Models
 
 @using Microsoft.AspNetCore.Components.Authorization
@@ -11,6 +13,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject NotificationService notificationService
+@inject NavigationManager navigationManager
 
 @rendermode InteractiveServer
 
@@ -54,6 +57,8 @@
                     }
                 </tbody>
 
+
+
                 <tfoot>
                     <tr>
                         <td colspan="3" class="text-right">Total:</td>
@@ -62,6 +67,12 @@
                     </tr>
                 </tfoot>
             </table>
+            <form method="post" @formname="realizarPago" @onsubmit="RealizarPago">
+                    <AntiforgeryToken />
+                    <div class="d-flex justify-content-center">
+                        <button type="submit" class="btn btn-lg btn-outline-success">Paga ahora</button>
+                    </div>
+                </form>
         </div>
     </div>
 }
@@ -74,12 +85,11 @@ else
 
 
 @code {
-
     List<ItemCarrito> detallesCarrito;
 
     public Productos producto { get; set; }
 
-    float precioAPagar;
+    decimal precioAPagar;
 
 
     protected override async Task OnInitializedAsync()
@@ -95,6 +105,48 @@ else
 
     }
 
+    public async Task RealizarPago()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var usuario = await UserManager.GetUserAsync(authState.User);
+        var userEmail = usuario.Email;
+
+        var domain = navigationManager.BaseUri.TrimEnd('/'); //https://localhost:12345/\
+
+
+        var lineItems = detallesCarrito.Select(p => new SessionLineItemOptions
+            {
+                Quantity = p.Cantidad,
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency = "DOP",
+                    UnitAmountDecimal = p.Producto.PrecioOferta * 100,
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = p.Producto.Nombre,
+                    }
+                }
+
+            }).ToList();
+
+        var options = new SessionCreateOptions
+            {
+                CustomerEmail = userEmail,
+                Locale = "es",
+                LineItems = lineItems,
+                Mode = "payment",
+                SuccessUrl = domain + "/carrito/pagoExitoso?session-id={CHECKOUT_SESSION_ID}",
+                CancelUrl = domain + "/carrito",
+            };
+
+        IStripeClient stripeClient = new StripeClient(apiKey: "sk_test_51P9eJd00zH2CvkJem6ubbie3njazHtSqZxNpWKE9OuuMeirnxr8txoeFdK3Cwne5lDkZ7CDxH3sre8gsg8Dwht1X005CoJEnqE");
+
+        var service = new SessionService(stripeClient);
+        Session session = await service.CreateAsync(options);
+
+        navigationManager.NavigateTo(session.Url);
+
+    }
 
     async Task CargarProductosEnCarrito(string userId)
     {
@@ -120,9 +172,7 @@ else
                     }
                 }
             }
-
             CalcularTotalPrecioCarrito();
-
         }
         catch (Exception ex)
         {
@@ -187,6 +237,7 @@ else
                 Console.WriteLine($"Error al eliminar el producto del carrito: {ex.Message}");
             }
         }
+        CalcularTotalPrecioCarrito();
     }
 
 }
