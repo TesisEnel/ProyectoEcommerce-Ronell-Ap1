@@ -1,0 +1,122 @@
+﻿@page "/carrito/pagoExitoso"
+@using Microsoft.AspNetCore.Identity
+@using ProyectoEcommerceAP1.Data
+@using Stripe
+@using Stripe.Checkout
+
+@using NetcodeHub.Packages.Components.Modal
+
+@inject NavigationManager navigationManager
+@inject HttpClient httpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject NotificationService notificationService
+
+@rendermode InteractiveServer
+
+<RadzenNotification />
+
+<Modal Actions="ButtonActions" 
+        BootstrapClass="border-success" 
+        CustomStyle="width:800px"
+        @bind-Open="IsOpen">
+        
+        
+        <ContentContent>
+            <h3 class="text-center text-muted">
+                Su compra se ha efectuado con exito. 
+                
+                Gracias por preferirnos :)
+            </h3>
+        </ContentContent>
+
+        <ButtonTemplate>
+            <div class="d-flex justify-content-center align-content-center">
+            <button class="btn btn-outline-success btn-lg" value="pagoRealizado" style="margin-right:5px">Okay</button>
+            </div>
+        </ButtonTemplate>
+</Modal>
+
+
+<p>Gracias por su compra</p>
+
+
+@code {
+
+    [SupplyParameterFromQuery(Name = "session-id")]
+    public string CheckoutSessionId { get; set; }
+
+    private string _customerName = string.Empty;
+
+    public bool IsOpen { get; set; }
+
+    public string? SelectedAction { get; set; }
+
+    public NotificationMessage Mensaje { get; set; } = new NotificationMessage();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        IStripeClient stripeClient = new StripeClient(apiKey: "sk_test_51P9eJd00zH2CvkJem6ubbie3njazHtSqZxNpWKE9OuuMeirnxr8txoeFdK3Cwne5lDkZ7CDxH3sre8gsg8Dwht1X005CoJEnqE");
+
+        var sessionService = new SessionService(stripeClient);
+
+        var session = await sessionService.GetAsync(CheckoutSessionId);
+
+        _customerName = session.CustomerDetails.Name;
+
+        IsOpen = true;
+        await EliminarProductosDelCarrito();
+        StateHasChanged();
+    }
+
+    void ButtonActions(string action)
+    {
+        SelectedAction = action;
+        if (action == "pagoRealizado")
+        {
+            navigationManager.NavigateTo("CatalogoProductos");
+        }
+    }
+
+    private async Task EliminarProductosDelCarrito()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var usuario = await UserManager.GetUserAsync(authState.User);
+
+            if (usuario != null)
+            {
+                var response = await httpClient.DeleteAsync($"api/Carrito/EliminarDetalles/{usuario.Id}");
+
+                if (response.IsSuccessStatusCode)
+                {
+
+                }
+                else
+                {
+                    var Mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Error al eliminar productos del carrito",
+                            Detail = "Hubo un error al intentar eliminar los productos del carrito. Por favor, inténtalo de nuevo.",
+                            Duration = 6000
+                        };
+                    notificationService.Notify(Mensaje);
+                }
+            }
+        }
+        catch (TaskCanceledException ex)
+        {
+            Console.WriteLine($"Error al eliminar productos del carrito: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar productos del carrito: {ex.Message}");
+        }
+    }
+
+    void OpenModal() => IsOpen = true;
+
+}
