@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProyectoEcommerceAP1.Data;
-using ProyectoEcommerceAP1.Data;
+using Radzen;
 using Shared.Models;
 
 namespace ProyectoEcommerceAP1.Controllers
@@ -231,36 +231,115 @@ namespace ProyectoEcommerceAP1.Controllers
         }
 
 
+        //[HttpPost("{carritoId}/Items")]
+        //public async Task<ActionResult<ItemCarrito>> PostItemCarrito(int carritoId, ItemCarrito itemCarrito)
+        //{
+        //        var carrito = await _context.Carrito.FindAsync(carritoId);
+        //        if (carrito == null)
+        //        {
+        //            return NotFound($"No se encontró un carrito con ID {carritoId}.");
+        //        }
+
+        //        var producto = await _context.Productos.FindAsync(itemCarrito.ProductoId);
+        //        if (producto == null)
+        //        {
+        //            return BadRequest($"El producto con ID {itemCarrito.ProductoId} no existe.");
+        //        }
+
+        //        int prueba = 0;
+
+        //        prueba = producto.CantidadProducto - itemCarrito.Cantidad;
+
+
+
+        //        if(producto.CantidadProducto <= 0 || prueba < 0)
+        //        {
+        //            return Conflict();
+        //        }
+        //        else
+        //        {
+        //            var itemsCarrito = await _context.ItemsCarrito.Where(ic => ic.Carrito.CarritoId == carritoId).ToListAsync();
+        //            itemCarrito.Carrito = carrito;
+
+        //            itemCarrito.Producto = producto;
+
+        //            _context.ItemsCarrito.Add(itemCarrito);
+
+        //            producto.CantidadProducto = prueba;
+
+        //        }
+
+        //        await _context.SaveChangesAsync();
+
+        //        return Ok(itemCarrito);
+        //}
+
+
         [HttpPost("{carritoId}/Items")]
         public async Task<ActionResult<ItemCarrito>> PostItemCarrito(int carritoId, ItemCarrito itemCarrito)
         {
             try
             {
-                var carrito = await _context.Carrito.FindAsync(carritoId);
+                var carrito = await _context.Carrito
+                    .Include(c => c.Items)
+                    .FirstOrDefaultAsync(c => c.CarritoId == carritoId);
+
                 if (carrito == null)
                 {
                     return NotFound($"No se encontró un carrito con ID {carritoId}.");
                 }
 
-                var producto = await _context.Productos.FindAsync(itemCarrito.ProductoId);
-                if (producto == null)
+                var productoExistente = carrito.Items.FirstOrDefault(ic => ic.ProductoId == itemCarrito.ProductoId);
+
+                if (productoExistente != null)
                 {
-                    return BadRequest($"El producto con ID {itemCarrito.ProductoId} no existe.");
+                    var producto = await _context.Productos.FindAsync(itemCarrito.ProductoId);
+
+                    int pruebaP = 0;
+
+                    pruebaP = producto.CantidadProducto - itemCarrito.Cantidad;
+
+                    productoExistente.Cantidad += itemCarrito.Cantidad;
+                    productoExistente.SubTotal = productoExistente.Cantidad * producto.PrecioOferta;
+
+                    producto.CantidadProducto = pruebaP;
                 }
-                itemCarrito.Carrito = carrito;
+                else
+                {
+                    var producto = await _context.Productos.FindAsync(itemCarrito.ProductoId);
+                    if (producto == null)
+                    {
+                        return BadRequest($"El producto con ID {itemCarrito.ProductoId} no existe.");
+                    }
 
-                itemCarrito.Producto = producto;
+                    int nuevaCantidad = itemCarrito.Cantidad;
 
-                _context.ItemsCarrito.Add(itemCarrito);
+                    int prueba = producto.CantidadProducto - nuevaCantidad;
+
+                    if (producto.CantidadProducto <= 0 || prueba < 0)
+                    {
+                        return Conflict("No hay suficiente cantidad del producto en nuestro inventario.");
+                    }
+
+                    itemCarrito.Carrito = carrito;
+                    itemCarrito.Producto = producto;
+                    itemCarrito.SubTotal = producto.PrecioOferta * nuevaCantidad;
+
+                    _context.ItemsCarrito.Add(itemCarrito);
+
+                    producto.CantidadProducto = prueba;
+                }
+
                 await _context.SaveChangesAsync();
 
                 return Ok(itemCarrito);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Se produjo un error al agregar el ítem al carrito: {ex.Message}");
+                return StatusCode(500, $"Se produjo un error al procesar la solicitud: {ex.Message}");
             }
         }
+
 
         // DELETE: api/Carrito/5
         [HttpDelete("{id}")]
@@ -293,10 +372,15 @@ namespace ProyectoEcommerceAP1.Controllers
             }
 
             var detalle = await _context.ItemsCarrito.FirstOrDefaultAsync(e => e.ItemCarritoId == detalleId);
+
+            var producto = await _context.Productos.FindAsync(detalle.ProductoId);
+
+            producto.CantidadProducto += detalle.Cantidad;
             if (detalle == null)
             {
                 return NotFound();
             }
+
 
             _context.ItemsCarrito.Remove(detalle);
             await _context.SaveChangesAsync();
