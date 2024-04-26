@@ -12,7 +12,7 @@ namespace ProyectoEcommerceAP1.Data
 
         public string ApellidoCliente {  get; set; } = string.Empty;
 
-        public DateTime FechaNacimiento { get; set; } = DateTime.Now.AddYears(-20);
+        public DateTime? FechaNacimiento { get; set; } = DateTime.Now.AddYears(-20);
 
         public string NumeroCedula { get; set; } = string.Empty;
 
