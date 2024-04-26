@@ -1,0 +1,393 @@
+﻿@page "/CatalogoProductos"
+@using Microsoft.AspNetCore.Identity
+@using ProyectoEcommerceAP1.Data
+@using System.Security.Claims
+@using global::Shared.Models
+
+@inject HttpClient httpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager navigationManager
+@inject NotificationService notificationService
+
+@rendermode InteractiveServer
+
+<RadzenNotification />
+<div class="container">
+    <div class="row">
+        @if (productos != null)
+        {
+            @foreach (var item in (CategoriaId.HasValue ? productos.Where(p => p.CategoriaId == CategoriaId.Value) : productos))
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="img-container d-flex justify-content-center align-items-center">
+                            @if (!string.IsNullOrEmpty(item.ImagenProducto))
+                            {
+                                <img src="@item.ImagenProducto" alt="Imagen del producto" class="img-fluid" style="width: 300px; height: 300px;" />
+                            }
+                            else
+                            {
+                                <p>No hay imagen</p>
+                            }
+
+                        </div>
+
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h6><strong>Nombre:</strong></h6>
+                                    <div class="mb-3">
+                                        @item.Nombre
+                                    </div>
+                                </div>
+
+                                <div class="col-5">
+                                    <h6><strong>Precio:</strong></h6>
+                                    <div class="mb-3">
+                                        RD$ @item.Precio
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <style>
+                                .custom-input {
+                                    width: 70px; 
+                                    height: 25px;
+                                    font-size: 1.0rem;
+                                }
+                            </style>
+
+                             <div class="d-flex justify-content-end mb-3">
+                                <div class="form-inline">
+                                    <InputNumber class="form-control form-control-sm custom-input" @bind-Value="cantidadProducto" min="1" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-center mb-3">
+                                <div class="btn-group">
+                                    <a href="/detalleProducto/@item.ProductoId"><button type="button" class="btn btn-info ml-5">Ver mas</button></a>
+                                    <button @onclick="() => AgregarCarrito(item)" type="button" class="btn btn-outline-primary mr-5"><i class="bi bi-cart"></i> Agregar al carrito</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+        }
+        else
+        {
+            <p>Cargando productos...</p>
+        }
+    </div>
+</div>
+
+
+
+
+
+@code {
+    [Parameter]
+    public int? CategoriaId { get; set; } = null;
+
+    public Productos producto { get; set; }
+
+    public Carrito carrito { get; set; }
+
+    public List<Productos> productos { get; set; } = new List<Productos>();
+
+    public Productos productoNuevo { get; set; }
+
+    public int cantidadProducto { get; set; }
+
+    public NotificationMessage Mensaje { get; set; } = new NotificationMessage();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
+
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            var user = authState.User;
+
+            if (user.Identity.IsAuthenticated)
+            {
+                carrito = await ObtenerCarritoUsuario(user.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                if(carrito == null)
+                {
+                    carrito = new Carrito
+                    {
+                        UserId = user.FindFirst(ClaimTypes.NameIdentifier).Value,
+                        Items = new List<ItemCarrito>()
+                    };
+
+                    var response = await httpClient.PostAsJsonAsync("api/Carrito", carrito);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var carritoCreado = await response.Content.ReadFromJsonAsync<Carrito>();
+
+                        if(carritoCreado != null)
+                        {
+                            carrito.CarritoId = carritoCreado.CarritoId;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar los productos: {ex.Message}");
+        }
+    }
+
+
+    public async Task CargarProductoNuevo(Productos producto)
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{producto.ProductoId}");
+
+            if (response != null)
+            {
+                productoNuevo = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar el producto nuevo: {ex.Message}");
+        }
+    }
+
+    private async Task CargarCarrito()
+    {
+        const int intentosMaximos = 3;
+        int intentoActual = 0;
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var usuario = await UserManager.GetUserAsync(authState.User);
+
+                if(carrito == null)
+                {
+                    carrito = new Carrito
+                    {
+                        UserId = usuario.Id,
+                        Items = new List<ItemCarrito>()
+                    };
+
+                    var response = await httpClient.PostAsJsonAsync("api/Carrito", carrito);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var carritoCreado = await response.Content.ReadFromJsonAsync<Carrito>();
+
+                        if(carritoCreado != null)
+                        {
+                            carrito.CarritoId = carritoCreado.CarritoId;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("El usuario no se encuentra autenticado");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar el carrito: {ex.Message}");
+
+            intentoActual++;
+
+            await Task.Delay(1000);
+        }
+    }
+
+    public async Task<Carrito> ObtenerCarritoUsuario(string userId)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"api/Carrito/Usuario/{userId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var carrito = await response.Content.ReadFromJsonAsync<Carrito>();
+                return carrito;
+            }
+            else
+            {
+                Console.WriteLine($"La solicitud al servidor no fue exitosa. Codigo de estado: {response.StatusCode}");
+                return null;
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Error al realizar la solicitud HTTP: {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al obtener el carrito del usuario: {ex.Message}");
+            return null;
+        }
+    }
+
+
+    
+    public async Task<List<ItemCarrito>> ObtenerProductosEnCarrito()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var usuario = await UserManager.GetUserAsync(authState.User);
+
+                var carritoUsuario = await ObtenerCarritoUsuario(usuario.Id);
+
+                if (carritoUsuario != null)
+                {
+                    return carritoUsuario.Items.ToList();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al obtener los productos en el carrito: {ex.Message}");
+        }
+        return new List<ItemCarrito>();
+    }
+
+    
+    
+    public async Task AgregarCarrito(Productos producto2)
+    {
+        try
+        {
+            await CargarProductoNuevo(producto2);
+
+            if (producto2 != null && carrito != null)
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                if (authState.User.Identity.IsAuthenticated)
+                {
+                    var usuario = await UserManager.GetUserAsync(authState.User);
+                    
+                    var productosEnCarrito = await ObtenerProductosEnCarrito();
+
+                    var itemCarrito = new ItemCarrito
+                        {
+                            ProductoId = producto2.ProductoId,
+                            Producto = producto2,
+                            Cantidad = cantidadProducto,
+                            SubTotal = producto2.PrecioOferta * cantidadProducto
+                        };
+
+                    if (Validar())
+                    {
+                        Mensaje = new NotificationMessage
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = "Error al agregar al carrito",
+                                Detail = "La cantidad que quiere del producto debe de ser mayor que 0",
+                                Duration = 5_000
+                            };
+                        notificationService.Notify(Mensaje);
+                        return;
+                    }
+
+                    carrito.Items.Add(itemCarrito);
+
+                    if(carrito != null && usuario != null)
+                    {
+                        if(itemCarrito.Cantidad <= producto2.CantidadProducto)
+                        Mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Success,
+                            Summary = "Exito al agregar el producto al carrito",
+                            Detail = $"El {itemCarrito.Producto.Nombre} ha sido agregado al carrito exitosamente",
+                            Duration = 6_000
+                        };
+
+                        notificationService.Notify(Mensaje);
+                        StateHasChanged();
+
+                        var response = await httpClient.PostAsJsonAsync($"api/Carrito/{carrito.CarritoId}/Items", itemCarrito);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                        }
+                        else
+                        {
+                            if(response.StatusCode == HttpStatusCode.Conflict)
+                            {
+                                Mensaje = new NotificationMessage
+                                    {
+                                        Severity = NotificationSeverity.Error,
+                                        Summary = "Error al agregar al carrito",
+                                        Detail = $"No hay suficiente cantidad de {itemCarrito.Producto.Nombre} en nuestro inventario",
+                                        Duration = 6_000
+                                    };
+                                notificationService.Notify(Mensaje);
+                                return;
+                            }
+
+                            if (response.StatusCode == HttpStatusCode.NotFound)
+                            {
+                                Mensaje = new NotificationMessage
+                                    {
+                                        Severity = NotificationSeverity.Error,
+                                        Summary = "Error al agregar al carrito",
+                                        Detail = "No se ha encontrado ese carrito",
+                                        Duration = 5_000
+                                    };
+                                notificationService.Notify(Mensaje);
+                                return;
+                            }
+
+                            if (response.StatusCode == HttpStatusCode.NotFound)
+                            {
+                                Mensaje = new NotificationMessage
+                                    {
+                                        Severity = NotificationSeverity.Error,
+                                        Summary = "Error al agregar al carrito",
+                                        Detail = "El producto que ha intentado agregar al carrito no existe",
+                                        Duration = 5_000
+                                    };
+                                notificationService.Notify(Mensaje);
+                                return;
+                            }
+                        }
+                        
+                    }
+                }
+
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Error de solicitud HTTP: {ex.Message}");
+        }
+        catch(HttpIOException ex)
+        {
+            Console.WriteLine($"Error de solicitud HTTP: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al agregar producto al carrito: {ex.Message}");
+        }
+    }
+
+    public bool Validar()
+    {
+        return cantidadProducto <= 0;
+    }
+}

@@ -15,6 +15,7 @@
 @inject IHttpContextAccessor httpContextAccessor
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NotificationService notificationService
 
 @using System.Net.Http.Json
 @using System.Security.Claims
@@ -22,7 +23,7 @@
 
 
 
-
+<RadzenNotification />
 @if (producto != null)
 {
     <div class="container text-center">
@@ -51,7 +52,26 @@
                         RD$ @producto.Precio
                     </h4>
 
-                    <button @onclick="AgregarCarrito" type="button" class="btn btn-outline-primary"><i class="bi bi-cart"></i> Agregar al carrito</button>
+                    <style>
+                        .custom-input {
+                            width: 70px; 
+                            height: 25px;
+                            font-size: 1.0rem; 
+                        }
+                    </style>
+                    <div class="row">
+                        <div class="col">
+                            <div class="d-flex justify-content-center mb-3">
+                                    <label for="cantidad-@producto.ProductoId" class="mr-2">Cantidad:  </label>
+                                    <input type="number" class="form-control form-control-sm custom-input" id="cantidad-@producto.ProductoId" @bind-value="cantidadProducto" min="1" />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="d-flex justify-content-center mb-3">
+                                <button @onclick="AgregarCarrito" type="button" class="btn btn-outline-primary"><i class="bi bi-cart"></i> Agregar al carrito</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -69,6 +89,10 @@
     private Carrito usuarioCarrito;
 
     protected HttpContext httpContext => httpContextAccessor.HttpContext;
+
+    public int cantidadProducto { get; set; }
+
+    public NotificationMessage Mensaje { get; set; }
 
 
     protected override async Task OnInitializedAsync()
@@ -208,18 +232,31 @@
         try
         {
             if (producto != null && carrito != null)
-                {
-                    var itemCarrito = new ItemCarrito
+            {
+                var itemCarrito = new ItemCarrito
                             {
                                 ProductoId = producto.ProductoId,
                                 Producto = producto,
-                                Cantidad = 1,
-                                SubTotal = producto.PrecioOferta,
+                                Cantidad = cantidadProducto,
+                                SubTotal = producto.PrecioOferta * cantidadProducto,
                             };
 
 
-                    carrito.Items.Add(itemCarrito);
+                carrito.Items.Add(itemCarrito);
 
+                if(carrito != null && producto != null)
+                {
+                    if(itemCarrito.Cantidad <= producto.CantidadProducto)
+                    Mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Success,
+                            Summary = "Exito al agregar el producto al carrito",
+                            Detail = $"El {itemCarrito.Producto.Nombre} ha sido agregado al carrito exitosamente",
+                            Duration = 6_000
+                        };
+
+                    notificationService.Notify(Mensaje);
+                    StateHasChanged();
                     var response = httpClient.PostAsJsonAsync($"api/Carrito/{carrito.CarritoId}/Items", itemCarrito).Result;
 
                     if (!response.IsSuccessStatusCode)
@@ -234,8 +271,8 @@
                         producto.EnCarrito = true;
                         StateHasChanged();
                     }
-                        
-                }
+                }      
+            }
         }
         catch (HttpRequestException ex)
         {

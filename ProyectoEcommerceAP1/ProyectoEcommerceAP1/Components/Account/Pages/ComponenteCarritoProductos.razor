@@ -10,10 +10,11 @@
 @inject HttpClient httpClient
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
+@inject NotificationService notificationService
 
 @rendermode InteractiveServer
 
-
+<RadzenNotification />
 @if (detallesCarrito != null && detallesCarrito.Any())
 {
 
@@ -26,7 +27,8 @@
                         <th>Imagen</th>
                         <th>Nombre</th>
                         <th>Descripción</th>
-                        <th>Precio</th>
+                        <th>Cantidad</th>
+                        <th>Valor</th>
                         <th>Eliminar</th>
                     </tr>
                 </thead>
@@ -42,7 +44,8 @@
                             </td>
                             <td>@detalle.Producto.Nombre</td>
                             <td>@detalle.Producto.Descripcion</td>
-                            <td>RD$ @detalle.Producto.Precio.ToString("N2")</td>
+                            <td>@detalle.Cantidad</td>
+                            <td>RD$ @detalle.SubTotal.ToString("N2")</td>
                             <td>
                                 <button type="button" @onclick="() => RemoverItemCarrito(detalle.ItemCarritoId)" class="btn btn-danger">Eliminar</button>
                             </td>
@@ -54,7 +57,8 @@
                 <tfoot>
                     <tr>
                         <td colspan="3" class="text-right">Total:</td>
-                        <td class="text-right">RD$ @precioAPagar</td>
+                        <td></td>
+                        <td class="text-right">RD$ @precioAPagar.ToString("N2")</td>
                     </tr>
                 </tfoot>
             </table>
@@ -137,7 +141,7 @@ else
     {
         if (detallesCarrito != null && detallesCarrito.Any())
         {
-            precioAPagar = detallesCarrito.Sum(detalle => detalle.Producto.Precio);
+            precioAPagar = detallesCarrito.Sum(detalle => detalle.SubTotal);
         }
         else
         {
@@ -156,22 +160,22 @@ else
 
                 if (response.IsSuccessStatusCode)
                 {
-                    detallesCarrito.RemoveAll(de => de.ItemCarritoId == itemCarritoId);
                     CalcularTotalPrecioCarrito();
 
 
                     var detalleEliminado = detallesCarrito.FirstOrDefault(p => p.ItemCarritoId == itemCarritoId);
+                    detallesCarrito.RemoveAll(de => de.ItemCarritoId == itemCarritoId);
 
-                    if (detalleEliminado != null)
-                    {
-                        detalleEliminado.Producto.EnCarrito = false;
-                        var updateResponse = await httpClient.PutAsJsonAsync($"api/Productos/{producto.ProductoId}", producto);
+                    var productoAEliminar = detalleEliminado.Producto;
 
-                        if (!updateResponse.IsSuccessStatusCode)
+                    var Mensaje = new NotificationMessage
                         {
-                            return;
-                        }
-                    }
+                            Severity = NotificationSeverity.Success,
+                            Summary = "Exito al eliminar el producto del carrito",
+                            Detail = $"El {productoAEliminar.Nombre} ha sido removido del carrito exitosamente",
+                            Duration = 6_000
+                        };
+                    notificationService.Notify(Mensaje);
                 }
                 else
                 {

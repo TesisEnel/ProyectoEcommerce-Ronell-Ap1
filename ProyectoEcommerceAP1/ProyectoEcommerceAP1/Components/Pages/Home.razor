@@ -8,10 +8,10 @@
 <PageTitle>Home</PageTitle>
 
 
-@if(categoria != null)
+@if (categoria != null)
 {
     <h2>Bienvenido a la seccion de @categoria.NombreCategoria del Hogar Macorisano</h2>
-    <ProyectoEcommerceAP1.Client.Pages.Consultas.CatalogoProductos CategoriaId= "@categoria.CategoriaId" />
+    <ProyectoEcommerceAP1.Components.Account.Pages.ComponenteCatalogoProductos CategoriaId="@categoria.CategoriaId" />
 
 }
 else
@@ -46,7 +46,7 @@ else
     <br />
     <h5>Le recomiendo que se dirija al apartado que dice Catalogo para visualizar todos los productos que tenemos en venta. Que la pase bien :)</h5>
     <br />
-    
+
 }
 
 
@@ -59,9 +59,9 @@ else
     [Parameter]
     public string UtlCategoria { get; set; }
 
-    private Categorias categoria {get; set;} = new Categorias();
+    private Categorias categoria { get; set; } = new Categorias();
 
-    public List<Categorias> categorias {get; set;}
+    public List<Categorias> categorias { get; set; }
 
 
 

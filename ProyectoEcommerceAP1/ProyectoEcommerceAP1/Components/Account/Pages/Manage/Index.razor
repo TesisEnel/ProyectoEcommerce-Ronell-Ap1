@@ -12,7 +12,7 @@
 <PageTitle>Profile</PageTitle>
 
 <h3>Perfil</h3>
-<StatusMessage />
+<StatusMessage Message="@message"/>
 
 <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
     <DataAnnotationsValidator />
@@ -63,8 +63,10 @@
     private string? phoneNumber;
     private string? nombre;
     private string? apellido;
-    private DateTime FechaN;
+    private DateTime? FechaN;
     private string? numCedula;
+
+    private string? message;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -86,31 +88,65 @@
 
         Input.PhoneNumber ??= phoneNumber;
 
-        Input.NombreC = nombre;
-        Input.ApellidoC = apellido;
-        Input.FechaNacimiento = FechaN;
-        Input.NumeroC = numCedula;
+        Input.NombreC ??= nombre;
+        Input.ApellidoC ??= apellido;
+        Input.FechaNacimiento ??= FechaN;
+        Input.NumeroC ??= numCedula;
     }
 
     private async Task OnValidSubmitAsync()
     {
-        user.PhoneNumber = Input.PhoneNumber;
-        user.NombreCliente = Input.NombreC;
-        user.ApellidoCliente = Input.ApellidoC;
-        user.FechaNacimiento = Input.FechaNacimiento;
-        user.NumeroCedula = Input.NumeroC;
 
-        var actualizarResultado = await UserManager.UpdateAsync(user);
-
-
-        if (!actualizarResultado.Succeeded)
-        {  
-            RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set the user.", HttpContext); 
+        if (Input.NombreC is null || Input.NombreC == nombre)
+        {
+            message = "Su nombre no ha cambiado.";
         }
-        
+        else
+        {
+            user.NombreCliente = Input.NombreC;
 
-        await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+            await UserManager.UpdateAsync(user);
+
+            message = "Su nombre ha sido actualizado correctamente.";
+        }
+
+        if (Input.ApellidoC is null || Input.ApellidoC == apellido)
+        {
+            message = "Su apellido no ha cambiado.";
+        }
+        else
+        {
+            user.ApellidoCliente = Input.ApellidoC;
+
+            await UserManager.UpdateAsync(user);
+
+            message = "Su apellido ha sido actualizado correctamente.";
+        }
+        if (Input.FechaNacimiento == null || Input.FechaNacimiento == FechaN)
+        {
+            message = "Su fecha de nacimiento no ha cambiado.";
+        }
+        else
+        {
+            user.FechaNacimiento = Input.FechaNacimiento;
+
+            await UserManager.UpdateAsync(user);
+
+            message = "Su fecha de nacimiento ha sido actualizada correctamente";
+        }
+        if (Input.NumeroC is null || Input.NumeroC == numCedula)
+        {
+            message = "Su numero de cedula no ha cambiado.";
+        }
+        else
+        {
+            user.NumeroCedula = Input.NumeroC;
+
+            await UserManager.UpdateAsync(user);
+
+            message = "Su numero de cedula ha sido actualizado correctamente";
+        }
+        message = "Sus datos han sido actualizados correctamente";
     }
 
     private sealed class InputModel
@@ -119,13 +155,13 @@
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
 
-        public string NombreC { get; set; } = string.Empty;
+        public string? NombreC { get; set; }
 
-        public string ApellidoC { get; set; } = string.Empty;
+        public string? ApellidoC { get; set; }
 
-        public DateTime FechaNacimiento { get; set; }
+        public DateTime? FechaNacimiento { get; set; }
 
-        public string NumeroC { get; set; } = string.Empty;
+        public string? NumeroC { get; set; }
 
     }
 }
