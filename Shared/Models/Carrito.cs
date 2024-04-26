@@ -20,7 +20,7 @@ namespace Shared.Models
 
         public ICollection<ItemCarrito> Items { get; set; } = new List<ItemCarrito>();
 
-        public float Total { get; set; }
+        public decimal Total { get; set; }
 
 
     }

@@ -30,7 +30,7 @@ namespace Shared.Models
 
 
         [Required(ErrorMessage = "El campo {0} es obligatorio")]
-        public float Precio { get; set; }
+        public decimal Precio { get; set; }
 
         [Required(ErrorMessage = "El campo {0} es obligatorio")]
         public int CantidadProducto { get; set; }
@@ -38,7 +38,7 @@ namespace Shared.Models
         [Required(ErrorMessage ="El campo {0} es obligatorio"), DisplayName("Imagen del producto")]
         public string? ImagenProducto { get; set; }
 
-        public float PrecioOferta {  get; set; }
+        public decimal PrecioOferta {  get; set; }
 
         public bool EnCarrito { get; set; } = false;
 

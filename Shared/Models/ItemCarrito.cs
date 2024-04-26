@@ -20,7 +20,7 @@ namespace Shared.Models
 
         public int Cantidad { get; set; }
 
-        public float SubTotal {  get; set; }
+        public decimal SubTotal {  get; set; }
 
 
         public Carrito? Carrito { get; set; }
