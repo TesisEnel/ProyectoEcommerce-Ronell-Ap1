@@ -23,7 +23,7 @@ namespace ProyectoEcommerceAP1.Data
 
 
         [Required(ErrorMessage = "El campo {0} es obligatorio")]
-        [RegularExpression(@"^\d{11}$", ErrorMessage = "El {0} debe de contener exactamente 11 digitos")]
+        [RegularExpression(@"^\d{3}-\d{7}-\d$", ErrorMessage = "El {0} debe de tener el formato XXX-XXXXXXX-X")]
         public string NumeroCedula { get; set; } = string.Empty;
 
     }
@@ -60,5 +60,4 @@ namespace ProyectoEcommerceAP1.Data
             return ValidationResult.Success;
         }
     }
-
 }
