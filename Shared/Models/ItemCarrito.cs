@@ -13,13 +13,18 @@ namespace Shared.Models
         [Key]
         public int ItemCarritoId { get; set; }
 
+        [Required(ErrorMessage = "El campo {0} es obligatorio")]
         public int ProductoId { get; set; }
 
         [ForeignKey("ProductoId")]
         public Productos Producto { get; set; }
 
+        [Required(ErrorMessage = "El campo {0} es obligatorio")]
+        [Range(1, int.MaxValue, ErrorMessage = "La {0} debe de ser mayor que 0")]
         public int Cantidad { get; set; }
 
+        [Required(ErrorMessage = "El campo {0} es obligatorio")]
+        [Range(0, double.MaxValue, ErrorMessage = "El {0} debe de ser mayor o igual a cero")]
         public decimal SubTotal {  get; set; }
 
 

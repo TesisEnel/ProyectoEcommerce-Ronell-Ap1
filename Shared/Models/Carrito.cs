@@ -21,7 +21,5 @@ namespace Shared.Models
         public ICollection<ItemCarrito> Items { get; set; } = new List<ItemCarrito>();
 
         public decimal Total { get; set; }
-
-
     }
 }

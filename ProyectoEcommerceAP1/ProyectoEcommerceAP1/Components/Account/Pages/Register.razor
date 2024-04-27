@@ -209,12 +209,20 @@
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
 
+        [Required(ErrorMessage = "El campo {0} es obligatorio")]
+        [RegularExpression(@"^[^\d]+$", ErrorMessage = "El {0} no puede contener números")]
         public string Nombre { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "El campo {0} es obligatorio")]
+        [RegularExpression(@"^[^\d]+$", ErrorMessage = "El {0} no puede contener numeros")]
         public string Apellido { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "El campo {0} es obligatorio")]
+        [FechaNacimientoValida(18, 105, ErrorMessage = "La Fecha de nacimiento debe ser mayor o igual a 18 años y menor que 105 años.")]
         public DateTime FechaNacimiento { get; set; } = DateTime.Now.AddYears(-18);
 
+        [Required(ErrorMessage = "El campo {0} es obligatorio")]
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "El {0} debe de contener exactamente 11 digitos")]
         public string NumeroCedula { get; set; } = string.Empty;
     }
 }
