@@ -21,8 +21,8 @@
                 <label>Id</label>
                 <div class="col-3">
                     <div class="input-group mb-3">
-                        <InputNumber class="form-control" @bind-Value="ClienteId" aria-describedby="BuscarId"></InputNumber>
-                        <button type="button" class="btn btn-outline-primary" @onclick="Buscar" id="BuscarId"><i class="b bi-search"></i></button>
+                        <InputNumber class="form-control" @bind-Value="ClienteId" aria-describedby="BuscarId" min="0"></InputNumber>
+                        <button type="button" class="btn btn-outline-primary" @onclick="Buscar" id="BuscarId"><i class="bi bi-search"></i></button>
                     </div>
                 </div>
 
@@ -68,7 +68,7 @@
 
                             <div class="col-3">
                                 <label>Telefono</label>
-                                <InputText class="form-control" @bind-Value="TelIngresado"></InputText>
+                                <InputText class="form-control" @oninput="ColocarGuionesAlTelefono" @bind-Value="TelIngresado"></InputText>
                             </div>
 
 
@@ -111,9 +111,9 @@
 
                 <div class="d-flex justify-content-center">
                     <div class="btn-group">
-                        <button class="btn btn-outline-primary" @onclick="Nuevo" type="button"><i class="oi oi-file">Nuevo</i></button>
-                        <button class="btn btn-outline-success" type="submit"><i class="oi oi-document">Guardar</i></button>
-                        <button class="btn btn-outline-danger" type="button" @onclick="Eliminar"><i class="oi oi-trash">Eliminar</i></button>
+                        <button class="btn btn-outline-primary" @onclick="Nuevo" type="button">Nuevo  <i class="bi bi-file-earmark"></i></button>
+                        <button class="btn btn-outline-success" type="submit">Guardar  <i class="bi bi-file-earmark-check-fill"></i></button>
+                        <button class="btn btn-outline-danger" type="button" @onclick="Eliminar">Eliminar  <i class="bi bi-trash3"></i></button>
                     </div>
                 </div>
             </div>
@@ -168,6 +168,18 @@
 
     public async Task Buscar()
     {
+        if (ValidarBuscar())
+        {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al buscar",
+                    Detail = "Ha ocurrido un error a la hora de buscar, verifique el Cliente Id y la fecha de nacimiento en busca de errores",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
+        }
         var clienteEncontrado = await httpClient.GetFromJsonAsync<Clientes>($"api/Clientes/{ClienteId}");
 
         if(clienteEncontrado is not null)
@@ -210,6 +222,19 @@
 
     public async Task Guardar()
     {
+
+        if (Validar())
+        {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al guardar",
+                    Detail = "Ha ocurrido un error a la hora de guardar. Verifique el Id y/o la fecha de nacimiento",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
+        }
         using var response = await httpClient.PostAsJsonAsync<Clientes>($"api/Clientes", clientes);
 
         if (!response.IsSuccessStatusCode)
@@ -289,21 +314,50 @@
 
         if (String.IsNullOrWhiteSpace(Nombre))
         {
-            MensajeVal += "El nombre es oblugatorio";
+            MensajeVal += "El nombre es obligatorio.";
+        }
+        else if (Nombre.Length < 2)
+        {
+            MensajeVal += "El nombre debe tener al menos 2 caracteres.";
+        }
+        else if (Nombre.Any(char.IsDigit))
+        {
+            MensajeVal += "El nombre no puede contener números.";
         }
 
         if (TipoTelSeleccionado <= 0)
         {
-            MensajeVal = "El Tipo de telefono es obligatorio";
+            MensajeVal += "El Tipo de teléfono es obligatorio.";
         }
 
         if (String.IsNullOrWhiteSpace(TelIngresado))
         {
-            MensajeVal += "El telefono es obligatorio";
+            MensajeVal += "El teléfono es obligatorio.";
+        }
+        else if (TelIngresado.Length != 12)
+        {
+            MensajeVal += "El teléfono debe tener exactamente 12 caracteres contando los 2 guiones.";
+        }
+        else if (!NumeroValido(TelIngresado))
+        {
+            MensajeVal += "El teléfono solo debe contener números y guiones.";
         }
 
         return MensajeVal.Length == 0;
     }
+
+    private bool NumeroValido(string telefonoIngresado)
+    {
+        foreach (char tI in telefonoIngresado)
+        {
+            if (!char.IsDigit(tI) && tI != '-')
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     public async Task Eliminar()
     {
@@ -335,6 +389,36 @@
             notificationService.Notify(Mensaje);
             return;
         }
+    }
+
+    private void ColocarGuionesAlTelefono(ChangeEventArgs e)
+    {
+        var entradaTelIngresadp = e.Value.ToString();
+
+        entradaTelIngresadp = entradaTelIngresadp.Replace("-", "");
+
+        if (entradaTelIngresadp.Length >= 3)
+        {
+            entradaTelIngresadp = entradaTelIngresadp.Insert(3, "-");
+        }
+        if (entradaTelIngresadp.Length >= 7)
+        {
+            entradaTelIngresadp = entradaTelIngresadp.Insert(7, "-");
+        }
+
+        TelIngresado = entradaTelIngresadp;
+    }
+
+    public bool Validar()
+    {
+        return ClienteId < 0 ||
+                clientes.FechaNacimiento >= DateTime.Now;
+    }
+
+    public bool ValidarBuscar()
+    {
+        return ClienteId <= 0 ||
+                clientes.FechaNacimiento > DateTime.Now;
     }
 
 

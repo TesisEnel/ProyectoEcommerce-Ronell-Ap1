@@ -20,7 +20,7 @@
                     <div class="col-2">
                         <label>Producto Id</label>
                         <div class="input-group mb-3">
-                            <InputNumber @bind-Value="ProductoId" class="form-control" aria-describedby="botonBuscar"></InputNumber>
+                            <InputNumber @bind-Value="ProductoId" class="form-control" aria-describedby="botonBuscar" min="0"></InputNumber>
                             <button type="button" @onclick="Buscar" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
                         </div>
                     </div>
@@ -56,7 +56,7 @@
                     <div class="col-2">
                         <label>Cantidad del producto</label>
                         <div class="input-group mb-3">
-                            <InputNumber class="form-control" @bind-Value="producto.CantidadProducto"></InputNumber>
+                            <InputNumber class="form-control" @bind-Value="producto.CantidadProducto" min ="1"></InputNumber>
                             <ValidationMessage For="@(() => producto.CantidadProducto)"></ValidationMessage>
                         </div>
                     </div>
@@ -66,21 +66,10 @@
                     <div class="col-3">
                         <label>Precio</label>
                         <div class="input-group mb-3">
-                            <InputNumber class="form-control" @bind-Value="producto.Precio"></InputNumber>
-                            <ValidationMessage For="@(() => producto.Precio)"></ValidationMessage>
-                        </div>
-                    </div>
-
-                    <div class="col-3">
-                        <label>Precio de Oferta (opcional)</label>
-                        <div class="input-group mb-3">
-                            <InputNumber class="form-control" @bind-Value="producto.PrecioOferta"></InputNumber>
+                            <InputNumber class="form-control" @bind-Value="producto.PrecioOferta" min="1"></InputNumber>
                             <ValidationMessage For="@(() => producto.PrecioOferta)"></ValidationMessage>
                         </div>
                     </div>
-                </div>
-
-                <div class="row">
                     <div class="col-3">
                         <label>Categorias</label>
                         <div class="input-group mb-3">
@@ -93,21 +82,23 @@
                             </InputSelect>
                         </div>
                     </div>
+                </div>
 
+                <div class="row">
                     <div class="col-3">
-                        <label class="form-label @(ImageUploadMessage == ""?"":"text-danger")">
-                            @(ImageUploadMessage == "" ? "Upload Image" : ImageUploadMessage)
+                        <label class="form-label @(MensajeErrorImagen == ""?"":"text-danger")">
+                            @(MensajeErrorImagen == "" ? "Imagen del producto" : MensajeErrorImagen)
                         </label>
-                        <InputFile class="form-control" OnChange="UploadImage"></InputFile>
+                        <InputFile class="form-control" OnChange="InsertarImagen"></InputFile>
                         <ValidationMessage For="@(() => producto.ImagenProducto)"></ValidationMessage>
                     </div>
                 </div>
 
                 <div class="card-footer d-flex justify-content-center">
                     <div class="btn-group">
-                        <button type="button" class="btn btn-outline-primary" @onclick="Nuevo">Nuevo <i class="bi bi-file-earmark"></i></button>
-                        <button type="submit" class="btn btn-outline-success">Guardar <i class="bi bi-file-earmark-check-fill"></i></button>
-                        <button type="button" class="btn btn-outline-danger">Eliminar <i class="bi bi-trash3"></i></button>
+                        <button type="button" class="btn btn-outline-primary" @onclick="Nuevo">Nuevo  <i class="bi bi-file-earmark"></i></button>
+                        <button type="submit" class="btn btn-outline-success">Guardar  <i class="bi bi-file-earmark-check-fill"></i></button>
+                        <button type="button" class="btn btn-outline-danger">Eliminar  <i class="bi bi-trash3"></i></button>
                     </div>
                 </div>
             </div>
@@ -131,7 +122,7 @@
 
     public IEnumerable<Categorias> L_Categorias { get; set; } = Enumerable.Empty<Categorias>();
 
-    string ImageUploadMessage = "";
+    string MensajeErrorImagen = "";
 
     public NotificationMessage Mensaje { get; set; } = new NotificationMessage();
 
@@ -158,6 +149,19 @@
 
     public async Task Buscar()
     {
+        if (ValidarBuscar())
+        {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al buscar",
+                    Detail = "El producto Id no puede ser negativo o la fecha no puede ser mayor al dia de hoy",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
+        }
+
         var productoEncontrado = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{ProductoId}");
 
         if(productoEncontrado != null)
@@ -181,6 +185,19 @@
 
     public async void Guardar()
     {
+        if (Validar())
+        {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al guardar",
+                    Detail = "El producto Id no puede ser negativo o la fecha no puede ser mayor al dia de hoy",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
+        }
+        producto.Precio = producto.PrecioOferta;
         using var response = await httpClient.PostAsJsonAsync("api/Productos", producto);
 
         if (!response.IsSuccessStatusCode)
@@ -203,6 +220,7 @@
             producto = productoDevuelto;
             StateHasChanged();
             Nuevo();
+            productoDevuelto = new Productos();
 
             Mensaje = new NotificationMessage
             {
@@ -261,7 +279,7 @@
         }
     }
 
-    async Task UploadImage(InputFileChangeEventArgs e)
+    async Task InsertarImagen(InputFileChangeEventArgs e)
     {
         if (e.File.Name.ToLower().Contains(".png"))
         {
@@ -270,17 +288,26 @@
             var buffer = new byte[resizeImage.Size];
             await resizeImage.OpenReadStream().ReadAsync(buffer);
             var imageData = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
-            ImageUploadMessage = "";
+            MensajeErrorImagen = "";
             producto.ImagenProducto = imageData;
             imageData = "";
             return;
         }
 
-        ImageUploadMessage = "Se necesita un archivo PNG.";
+        MensajeErrorImagen = "Se necesita un archivo PNG.";
         return;
     }
 
 
+    public bool Validar()
+    {
+        return ProductoId < 0 || 
+                producto.FechaEntrada > DateTime.Now;
+    }
 
-
+    public bool ValidarBuscar()
+    {
+        return ProductoId <= 0 ||
+                producto.FechaEntrada > DateTime.Now;
+    }
 }

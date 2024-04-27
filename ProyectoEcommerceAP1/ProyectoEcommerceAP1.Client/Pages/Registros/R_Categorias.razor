@@ -18,7 +18,7 @@
                 <div class="col-2">
                     <label>Categoria Id</label>
                     <div class="input-group mb-3">
-                        <InputNumber @bind-Value="CategoriaId" class="form-control"></InputNumber>
+                        <InputNumber @bind-Value="CategoriaId" class="form-control" min="0"></InputNumber>
                         <button type="button" @onclick="Buscar" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
                     </div>
                 </div>
@@ -83,6 +83,18 @@
 
     public async Task Buscar()
     {
+        if (ValidarBuscar())
+        {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al buscar",
+                    Detail = "Ha ocurrido un error a la hora de buscar una categoria, verifique Categoria Id en busca de errores",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
+        }
         var categoriaEncontrada = await httpClient.GetFromJsonAsync<Categorias>($"api/Categorias/{CategoriaId}");
 
         if(categoriaEncontrada != null)
@@ -106,6 +118,18 @@
 
     public async Task Guardar()
     {
+        if (Validar())
+        {
+            Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error al guardar",
+                    Detail = "Ha ocurrido un error a la hora de guardar una categoria, verifique si Categoria Id se encuentra ingresado correctamente",
+                    Duration = 5_000
+                };
+            notificationService.Notify(Mensaje);
+            return;
+        }
         using var response = await httpClient.PostAsJsonAsync("api/Categorias", categoria);
 
         if (!response.IsSuccessStatusCode)
@@ -186,5 +210,15 @@
             notificationService.Notify(Mensaje);
             return;
         }
+    }
+
+    public bool Validar()
+    {
+        return CategoriaId < 0;
+    }
+
+    public bool ValidarBuscar()
+    {
+        return CategoriaId <= 0;
     }
 }
