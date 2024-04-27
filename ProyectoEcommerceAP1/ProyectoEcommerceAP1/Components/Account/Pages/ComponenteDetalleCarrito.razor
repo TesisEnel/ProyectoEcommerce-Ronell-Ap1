@@ -39,17 +39,9 @@
                 <div class="media-body">
                     <h2 class="mb-0">@(producto != null ? producto.Nombre : "Producto no encontrado")</h2>
                     <p>@producto.Descripcion</p>
-                    @if (producto.Precio > producto.PrecioOferta)
-                    {
-                        <h6 class="text-muted original-price">RD$ @producto.Precio</h6>
-                    }
-                    else
-                    {
-                        <h6>RD$ @producto.Precio</h6>
-                    }
 
                     <h4 class="price">
-                        RD$ @producto.Precio
+                        RD$ @producto.PrecioOferta.ToString("N2")
                     </h4>
 
                     <style>

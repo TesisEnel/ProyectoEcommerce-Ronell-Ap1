@@ -45,7 +45,7 @@
                                 <div class="col-5">
                                     <h6><strong>Precio:</strong></h6>
                                     <div class="mb-3">
-                                        RD$ @item.Precio
+                                        RD$ @item.PrecioOferta.ToString("N2")
                                     </div>
                                 </div>
                             </div>
@@ -68,7 +68,7 @@
                             <div class="d-flex justify-content-center mb-3">
                                 <div class="btn-group">
                                     <a href="/detalleProducto/@item.ProductoId"><button type="button" class="btn btn-info ml-5">Ver mas</button></a>
-                                    <button @onclick="() => AgregarCarrito(item)" type="button" class="btn btn-outline-primary mr-5"><i class="bi bi-cart"></i> Agregar al carrito</button>
+                                    <button @onclick="() => AgregarCarrito(item)" type="button" class="btn btn-outline-primary mr-5"><i class="bi bi-cart-plus"></i> Agregar al carrito</button>
                                 </div>
                             </div>
                         </div>
@@ -83,7 +83,6 @@
         }
     </div>
 </div>
-
 
 
 
