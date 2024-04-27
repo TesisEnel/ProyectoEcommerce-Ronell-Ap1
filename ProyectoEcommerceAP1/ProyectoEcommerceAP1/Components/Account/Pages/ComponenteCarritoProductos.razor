@@ -50,7 +50,7 @@
                             <td>@detalle.Cantidad</td>
                             <td>RD$ @detalle.SubTotal.ToString("N2")</td>
                             <td>
-                                <button type="button" @onclick="() => RemoverItemCarrito(detalle.ItemCarritoId)" class="btn btn-danger">Eliminar</button>
+                                <button type="button" @onclick="() => RemoverItemCarrito(detalle.ItemCarritoId)" class="btn btn-danger"><i class="bi bi-trash3"></i> Eliminar</button>
                             </td>
 
                         </tr>
@@ -70,7 +70,7 @@
             <form method="post" @formname="realizarPago" @onsubmit="RealizarPago">
                     <AntiforgeryToken />
                     <div class="d-flex justify-content-center">
-                        <button type="submit" class="btn btn-lg btn-outline-success">Paga ahora</button>
+                    <button type="submit" class="btn btn-lg btn-outline-success"><i class="bi bi-cash-stack"></i> Paga ahora</button>
                     </div>
                 </form>
         </div>
