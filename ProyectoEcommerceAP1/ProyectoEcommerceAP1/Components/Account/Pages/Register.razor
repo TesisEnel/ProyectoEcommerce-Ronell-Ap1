@@ -21,34 +21,34 @@
 
 
 
-<PageTitle>Register</PageTitle>
+<PageTitle>Registro</PageTitle>
 
-<h1>Register</h1>
+<h1>Registro</h1>
 <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
 
     <div class="row">
         <div class="col-md-4">
              <StatusMessage Message="@Message" />
             <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
+            <h2>Crea una cuenta nueva.</h2>
             <hr />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="email">Email</label>
+                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="nombre@ejemplo.com" />
+                <label for="email">Correo electrónico</label>
                 <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
             <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="password">Password</label>
+                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="contraseña" />
+                <label for="contraseña">Contraseña</label>
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
             <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="confirm-password">Confirm Password</label>
+                <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="contraseña" />
+                <label for="confirm-password">Confirmar Contraseña</label>
                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Registro</button>
         </div>
 
 
@@ -100,7 +100,7 @@
 </EditForm>
 <div class="col-md-6 col-md-offset-2">
     <section>
-        <h3>Use another service to register.</h3>
+        <h3>Utilice otro servicio para registrarse.</h3>
         <hr />
         <ExternalLoginPicker />
     </section>
@@ -147,7 +147,7 @@
 
         await dbContext.SaveChangesAsync();
 
-        Logger.LogInformation("User created a new account with password.");
+        Logger.LogInformation("El usuario creó una nueva cuenta con contraseña.");
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -177,8 +177,8 @@
         }
         catch
         {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+            throw new InvalidOperationException($"No se puede crear una instancia de '{nameof(ApplicationUser)}'. " +
+                $"Asegurarse de que '{nameof(ApplicationUser)}' no es una clase abstracta y tiene un constructor sin parámetros.");
         }
     }
 
@@ -186,7 +186,7 @@
     {
         if (!UserManager.SupportsUserEmail)
         {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
+            throw new NotSupportedException("La interfaz de usuario predeterminada requiere una tienda de usuarios con soporte por correo electrónico.");
         }
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
@@ -199,14 +199,14 @@
         public string Email { get; set; } = "";
 
         [Required]
-        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(100, ErrorMessage = "La {0} debe tener al menos {2} y un máximo de {1} caracteres.", MinimumLength = 6)]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string Password { get; set; } = "";
 
         [DataType(DataType.Password)]
         [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        [Compare("Password", ErrorMessage = "La contraseña y la contraseña de confirmación no coinciden.")]
         public string ConfirmPassword { get; set; } = "";
 
         [Required(ErrorMessage = "El campo {0} es obligatorio")]
