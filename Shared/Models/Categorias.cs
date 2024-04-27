@@ -13,7 +13,7 @@ namespace Shared.Models
         public int CategoriaId { get; set; }
 
         [Required(ErrorMessage = "El campo {0} es obligatorio")]
-        [RegularExpression(@"^[^\d\s]+$", ErrorMessage = "El {0} no puede contener números")]
+        [RegularExpression(@"^[^\d]+$", ErrorMessage = "El {0} no puede contener números")]
         [StringLength(50, MinimumLength = 3, ErrorMessage = "El {0} debe tener entre {2} y {1} caracteres")]
         public string NombreCategoria { get; set; } = string.Empty;
 

@@ -42,7 +42,7 @@ namespace Shared.Models
         [Required(ErrorMessage ="El campo {0} es obligatorio"), DisplayName("Imagen del producto")]
         public string? ImagenProducto { get; set; }
 
-        [Range(50, double.MaxValue, ErrorMessage = "El {0} debe ser mayor que cero")]
+        [Range(50, double.MaxValue, ErrorMessage = "El Precio debe ser mayor que cero")]
         public decimal PrecioOferta {  get; set; }
 
         public bool EnCarrito { get; set; } = false;
