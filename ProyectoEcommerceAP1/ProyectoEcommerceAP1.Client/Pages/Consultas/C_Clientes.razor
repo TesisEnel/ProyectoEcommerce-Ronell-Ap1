@@ -12,7 +12,7 @@
         </div>
 
         <div class="card-body">
-            <a href="/registroCliente"><button type="button" class="btn btn-info"><i class="oi oi-plus"> Agregar un nuevo cliente</i></button></a>
+            <a href="/registroCliente"><button type="button" class="btn btn-info"><i class="bi bi-person-plus-fill">  Agregar un nuevo cliente</i></button></a>
         
             <div class="row">
                 <div class="col">
@@ -31,7 +31,7 @@
                     <label>Campo</label>
                     <InputSelect @bind-Value="opcFiltrado" class="form-select">
                         <option value="0" disabled selected>Seleccione</option>
-                        <option value="1">Busqueda porI ID</option>
+                        <option value="1">Busqueda por ID</option>
                         <option value="2">Busqueda por Nombre</option>
                     </InputSelect>
                 </div>
@@ -51,7 +51,7 @@
                 </div>
 
                 <div class="col">
-                    <button type="button" class="btn btn-outline-primary" @onclick="Buscar"><i class="oi oi-reload"> Buscar</i></button>
+                    <button type="button" class="btn btn-outline-primary" @onclick="Buscar">Buscar  <i class="bi bi-search"></i></button>
                 </div>
             </div>
             
@@ -72,7 +72,7 @@
                         {
                             <tr>
                                 <td>@cliente.ClienteId</td>
-                                <td>@cliente.FechaNacimiento.ToString("dd/MM/yyyy")</td>
+                                <td>@cliente.FechaNacimiento</td>
                                 <td>@cliente.NombreCompleto</td>
                                 <td><a href="/registroCliente/@cliente.ClienteId"><button type="button" class="btn btn-outline-primary"><i class="oi oi-eye"></i> Ver</button></a></td>
                             </tr>
