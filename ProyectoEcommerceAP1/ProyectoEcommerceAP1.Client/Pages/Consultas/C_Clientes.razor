@@ -2,6 +2,10 @@
 
 @inject HttpClient httpClient
 
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Admin")]
+
 @rendermode InteractiveServer
 
 
@@ -74,7 +78,7 @@
                                 <td>@cliente.ClienteId</td>
                                 <td>@cliente.FechaNacimiento</td>
                                 <td>@cliente.NombreCompleto</td>
-                                <td><a href="/registroCliente/@cliente.ClienteId"><button type="button" class="btn btn-outline-primary"><i class="oi oi-eye"></i> Ver</button></a></td>
+                                <td><a href="/registroCliente/@cliente.ClienteId"><button type="button" class="btn btn-outline-primary">Ver  <i class="oi oi-eye"></i></button></a></td>
                             </tr>
                         }
                     </tbody>
@@ -95,6 +99,16 @@
 </div>
 
 
+
+<AuthorizeView>
+    <NotAuthorized>
+        <h2>
+            Usted no est&aacute; autorizado para estar aqui.
+
+            Debe de ser admin para poder acceder a este apartado
+        </h2>
+    </NotAuthorized>
+</AuthorizeView>
 
 
 @code {

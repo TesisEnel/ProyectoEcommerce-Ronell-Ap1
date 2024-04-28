@@ -8,8 +8,6 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using ProyectoEcommerceAP1.Data
 
-@* @attribute [Authorize(Roles = "Admin")] *@
-
 
 
 @inject UserManager<ApplicationUser> UserManager
@@ -21,10 +19,10 @@
 
 @rendermode InteractiveServer
 
-@* @attribute [Authorize(Roles = "Admin")] *@
+@attribute [Authorize(Roles = "Admin")]
 
-@* <AuthorizeView Roles="Admin">
-    <Authorized> *@
+<AuthorizeView Roles="Admin">
+    <Authorized>
          <div class="container">
             <div class="card">
                 <div class="card-header">
@@ -131,10 +129,18 @@
                 </div>
             </div>
  
-@*     </Authorized>
+    </Authorized>
+
+    <NotAuthorized>
+
+        <h2>Usted no esta autorizado para estar aqui.
+
+            Debe de ser admin para poder acceder a este apartado
+        </h2>
+    </NotAuthorized>
 
 </AuthorizeView>
- *@
+
 
  
 @code

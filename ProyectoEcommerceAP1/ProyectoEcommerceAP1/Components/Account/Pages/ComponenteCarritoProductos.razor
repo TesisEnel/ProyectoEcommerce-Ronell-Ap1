@@ -18,69 +18,78 @@
 @rendermode InteractiveServer
 
 <RadzenNotification />
-@if (detallesCarrito != null && detallesCarrito.Any())
-{
 
-    <div class="container">
-        <h2 class="text-center">Productos en el carrito</h2>
-        <div class="table-responsive">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Imagen</th>
-                        <th>Nombre</th>
-                        <th>Descripción</th>
-                        <th>Cantidad</th>
-                        <th>Valor</th>
-                        <th>Eliminar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var detalle in detallesCarrito)
-                    {
-                        <tr>
-                            <td>
-                                @if (!string.IsNullOrEmpty(detalle.Producto.ImagenProducto))
-                                {
-                                    <img src="@detalle.Producto.ImagenProducto" alt="Imagen del producto" class="img-fluid rounded" style="max-width: 100px;" />
-                                }
-                            </td>
-                            <td>@detalle.Producto.Nombre</td>
-                            <td>@detalle.Producto.Descripcion</td>
-                            <td>@detalle.Cantidad</td>
-                            <td>RD$ @detalle.SubTotal.ToString("N2")</td>
-                            <td>
-                                <button type="button" @onclick="() => RemoverItemCarrito(detalle.ItemCarritoId)" class="btn btn-danger"><i class="bi bi-trash3"></i> Eliminar</button>
-                            </td>
+<AuthorizeView>
+    <Authorized>
+        @if (detallesCarrito != null && detallesCarrito.Any())
+        {
 
-                        </tr>
-                    }
-                </tbody>
+            <div class="container">
+                <h2 class="text-center">Carrito de @usuarioE.NombreCliente</h2>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Valor</th>
+                                <th>Eliminar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detalle in detallesCarrito)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(detalle.Producto.ImagenProducto))
+                                        {
+                                            <img src="@detalle.Producto.ImagenProducto" alt="Imagen del producto" class="img-fluid rounded" style="max-width: 100px;" />
+                                        }
+                                    </td>
+                                    <td>@detalle.Producto.Nombre</td>
+                                    <td>@detalle.Producto.Descripcion</td>
+                                    <td>@detalle.Cantidad</td>
+                                    <td>RD$ @detalle.SubTotal.ToString("N2")</td>
+                                    <td>
+                                        <button type="button" @onclick="() => RemoverItemCarrito(detalle.ItemCarritoId)" class="btn btn-danger"><i class="bi bi-trash3"></i> Eliminar</button>
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
 
 
 
-                <tfoot>
-                    <tr>
-                        <td colspan="3" class="text-right">Total:</td>
-                        <td></td>
-                        <td class="text-right">RD$ @precioAPagar.ToString("N2")</td>
-                    </tr>
-                </tfoot>
-            </table>
-            <form method="post" @formname="realizarPago" @onsubmit="RealizarPago">
-                    <AntiforgeryToken />
-                    <div class="d-flex justify-content-center">
-                    <button type="submit" class="btn btn-lg btn-outline-success"><i class="bi bi-cash-stack"></i> Paga ahora</button>
-                    </div>
-                </form>
-        </div>
-    </div>
-}
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right">Total:</td>
+                                <td></td>
+                                <td class="text-right">RD$ @precioAPagar.ToString("N2")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <form method="post" @formname="realizarPago" @onsubmit="RealizarPago">
+                            <AntiforgeryToken />
+                            <div class="d-flex justify-content-center">
+                            <button type="submit" class="btn btn-lg btn-outline-success"><i class="bi bi-cash-stack"></i> Paga ahora</button>
+                            </div>
+                        </form>
+                </div>
+            </div>
+        }
 
-else
-{
-    <p class="text-center">No hay productos en el carrito</p>
-}
+        else
+        {
+            <p class="text-center">No hay productos en su carrito</p>
+        }
+    </Authorized>
+
+    <NotAuthorized>
+        <h3>Debe de crearse una cuenta para poder acceder a este apartado.</h3>
+    </NotAuthorized>
+</AuthorizeView>
 
 
 
@@ -91,6 +100,8 @@ else
 
     decimal precioAPagar;
 
+    public ApplicationUser usuarioE { get; set; }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,9 +109,9 @@ else
 
         if (authState.User.Identity.IsAuthenticated)
         {
-            var usuario = await UserManager.GetUserAsync(authState.User);
+            usuarioE = await UserManager.GetUserAsync(authState.User);
 
-            await CargarProductosEnCarrito(usuario.Id);
+            await CargarProductosEnCarrito(usuarioE.Id);
         }
 
     }

@@ -3,6 +3,10 @@
 @inject HttpClient httpClient
 @inject NotificationService notificationService
 
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Admin")]
+
 @rendermode InteractiveServer
 
 <div class="container">
@@ -54,8 +58,14 @@
 </div>
 
 
+<AuthorizeView>
+    <NotAuthorized>
+        <h2>Usted no est&aacute; autorizado para estar aqui.
 
-
+            Debe de ser admin para poder acceder a este apartado.
+        </h2>
+    </NotAuthorized>
+</AuthorizeView>
 
 
 

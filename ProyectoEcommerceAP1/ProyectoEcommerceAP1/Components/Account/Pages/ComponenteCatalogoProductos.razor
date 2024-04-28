@@ -28,7 +28,7 @@
                             }
                             else
                             {
-                                <p>No hay imagen</p>
+                                <p>La imagen no ha sido encontrada</p>
                             }
 
                         </div>
@@ -68,7 +68,7 @@
                             <div class="d-flex justify-content-center mb-3">
                                 <div class="btn-group">
                                     <a href="/detalleProducto/@item.ProductoId"><button type="button" class="btn btn-info ml-5">Ver mas</button></a>
-                                    <button @onclick="() => AgregarCarrito(item)" type="button" class="btn btn-outline-primary mr-5"><i class="bi bi-cart-plus"></i> Agregar al carrito</button>
+                                    <button @onclick="() => AgregarCarrito(item)" type="button" class="btn btn-outline-primary mr-5">Agregar al carrito  <i class="bi bi-cart-plus"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -240,7 +240,7 @@
     }
 
 
-    
+
     public async Task<List<ItemCarrito>> ObtenerProductosEnCarrito()
     {
         try
@@ -265,8 +265,8 @@
         return new List<ItemCarrito>();
     }
 
-    
-    
+
+
     public async Task AgregarCarrito(Productos producto2)
     {
         try
@@ -279,7 +279,7 @@
                 if (authState.User.Identity.IsAuthenticated)
                 {
                     var usuario = await UserManager.GetUserAsync(authState.User);
-                    
+
                     var productosEnCarrito = await ObtenerProductosEnCarrito();
 
                     var itemCarrito = new ItemCarrito
@@ -308,7 +308,7 @@
                     if(carrito != null && usuario != null)
                     {
                         if(itemCarrito.Cantidad <= producto2.CantidadProducto)
-                        Mensaje = new NotificationMessage
+                            Mensaje = new NotificationMessage
                         {
                             Severity = NotificationSeverity.Success,
                             Summary = "Exito al agregar el producto al carrito",
@@ -365,10 +365,23 @@
                                 return;
                             }
                         }
-                        
+
                     }
                 }
 
+            }
+            if(carrito == null)
+            {
+                Mensaje = new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error al agregar al carrito",
+                        Detail = $"Debe de crearse una cuenta para poder agregar un producto al carrito",
+                        Duration = 6_000
+                    };
+
+                notificationService.Notify(Mensaje);
+                return;
             }
         }
         catch (HttpRequestException ex)

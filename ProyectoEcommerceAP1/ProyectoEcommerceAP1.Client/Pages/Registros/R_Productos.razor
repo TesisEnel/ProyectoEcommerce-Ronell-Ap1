@@ -3,6 +3,11 @@
 @inject HttpClient httpClient
 @inject NotificationService notificationService
 
+
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Admin")]
+
 @rendermode InteractiveServer
 
 <RadzenNotification />
@@ -47,7 +52,7 @@
 
 
                     <div class="col-3">
-                        <label>Descripcion</label>
+                        <label>Descripci&oacute;n</label>
                         <div class="input-group mb-3">
                             <InputTextArea @bind-Value="producto.Descripcion" class="form-control"></InputTextArea>
                             <ValidationMessage For="@(() => producto.Descripcion)"></ValidationMessage>
@@ -107,7 +112,15 @@
 </div>
 
 
+<AuthorizeView>
+    <NotAuthorized>
+        <h2>
+            Usted no est&aacute; autorizado para estar aqui.
 
+            Debe de ser admin para poder acceder a este apartado.
+        </h2>
+    </NotAuthorized>
+</AuthorizeView>
 
 
 
